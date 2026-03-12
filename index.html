@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stylectra PWA Logo Generator</title>
+<style>
+  body { 
+    font-family: system-ui, -apple-system, sans-serif; 
+    text-align: center; 
+    padding: 40px 20px; 
+    background: #f4f4f9; 
+    color: #333;
+  }
+  .preview-container {
+    margin: 30px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    display: inline-block;
+  }
+  .preview { 
+    border-radius: 22px; 
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1); 
+  }
+  .btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  button { 
+    padding: 12px 24px; 
+    font-size: 16px; 
+    font-weight: 600;
+    cursor: pointer; 
+    background: #1A1A2E; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    transition: transform 0.2s, background 0.2s;
+  }
+  button:hover { 
+    background: #E94057; 
+    transform: translateY(-2px);
+  }
+</style>
+</head>
+<body>
+
+  <h1>Stylectra Logo Studio</h1>
+  <p>Preview and export your PWA icons below.</p>
+  
+  <div class="preview-container">
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" class="preview" width="256" height="256" alt="Stylectra Logo Preview" />
+  </div>
+  
+  <div class="btn-group">
+    <button onclick="downloadPNG(192)">Download 192x192 PNG</button>
+    <button onclick="downloadPNG(512)">Download 512x512 PNG</button>
+    <button onclick="downloadSVG()" style="background: #2C5364;">Download SVG Vector</button>
+  </div>
+
+<script>
+// Premium SVG Design for Stylectra
+const svgData = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1A2E" />
+      <stop offset="50%" stop-color="#16213E" />
+      <stop offset="100%" stop-color="#0F3460" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E94057" />
+      <stop offset="100%" stop-color="#F27121" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="115" fill="url(#bg)" />
+  
+  <g transform="translate(0, 15)">
+      <path d="M 256 120 C 300 120 320 150 320 185 C 320 230 256 250 256 270" fill="none" stroke="url(#accent)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+      
+      <path d="M 256 270 L 100 370 L 412 370 Z" fill="none" stroke="url(#accent)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+      
+      <path d="M 380 110 Q 380 145 415 145 Q 380 145 380 180 Q 380 145 345 145 Q 380 145 380 110 Z" fill="#F27121" />
+      <path d="M 150 160 Q 150 180 170 180 Q 150 180 150 200 Q 150 180 130 180 Q 150 180 150 160 Z" fill="#E94057" />
+  </g>
+</svg>`;
+
+const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+const url = URL.createObjectURL(blob);
+document.getElementById('preview').src = url;
+
+function downloadPNG(size) {
+    const canvas = document.getElementById('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    img.onload = function() {
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        const pngData = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = pngData;
+        a.download = `icon-${size}x${size}.png`;
+        a.click();
+    };
+    img.src = url;
+}
+
+function downloadSVG() {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stylectra-logo.svg";
+    a.click();
+}
+</script>
+</body>
+</html>
