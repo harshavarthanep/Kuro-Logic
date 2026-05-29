@@ -242,10 +242,14 @@
         };
 
         const themes = [
-            { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)", baseFreq: 110 },
-            { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #00220e, #000000)", baseFreq: 130 },
-            { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #220000, #000000)", baseFreq: 90 },
-            { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #140024, #000000)", baseFreq: 150 }
+            // Glass: Calming A Minor 9 vibe
+            { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)", freqs: [220, 277.18, 329.63, 440] },
+            // Neon: Energetic G Major vibe
+            { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #00220e, #000000)", freqs: [196, 246.94, 293.66, 392] },
+            // Magma: Tense E Minor vibe
+            { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #220000, #000000)", freqs: [164.81, 196, 220, 329.63] },
+            // Pro: Deep, mysterious C Minor vibe
+            { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #140024, #000000)", freqs: [130.81, 155.56, 196, 261.63] }
         ];
 
         const DOM = {
@@ -262,11 +266,13 @@
             installBtn: document.getElementById('btn-install')
         };
 
-        // --- Web Audio Engine ---
+        // --- Premium Web Audio Engine ---
         let audioCtx = null;
         let bgmOsc = null;
         let bgmGain = null;
+        let bgmFilter = null;
         let bgmTimeout = null;
+        let bgmStep = 0; // Tracks which note of the theme's chord to play
 
         function initAudio() {
             if (audioCtx) return;
@@ -279,17 +285,23 @@
             try {
                 bgmOsc = audioCtx.createOscillator();
                 bgmGain = audioCtx.createGain();
+                bgmFilter = audioCtx.createBiquadFilter();
                 
-                bgmOsc.type = 'triangle';
-                let freq = themes[state.themeIndex].baseFreq;
-                bgmOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                // Use a soft sine wave instead of harsh triangle
+                bgmOsc.type = 'sine'; 
                 
-                bgmGain.gain.setValueAtTime(0.5, audioCtx.currentTime); // Louder BGM
+                // Muffle the sound to make it sound "ambient" and deep
+                bgmFilter.type = 'lowpass';
+                bgmFilter.frequency.value = 600; 
+
+                // Start silent to prevent popping
+                bgmGain.gain.setValueAtTime(0, audioCtx.currentTime); 
                 
-                bgmOsc.connect(bgmGain);
+                bgmOsc.connect(bgmFilter);
+                bgmFilter.connect(bgmGain);
                 bgmGain.connect(audioCtx.destination);
-                bgmOsc.start();
                 
+                bgmOsc.start();
                 tickBGM();
             } catch(e) { console.log(e); }
         }
@@ -298,61 +310,87 @@
             if (!audioCtx || state.audioMuted || !bgmOsc) return;
             let now = audioCtx.currentTime;
             let pct = state.timeLeft / state.timeTotal;
-            let freq = themes[state.themeIndex].baseFreq;
             
-            // Dynamic tempo based on time left
-            let interval = 900;
-            let mod = 1.0;
-            if (pct <= 0.25) { interval = 250; mod = 1.5; } // Panic
-            else if (pct <= 0.5) { interval = 500; mod = 1.2; } // Tension
+            // Get the current theme's chord
+            let currentChord = themes[state.themeIndex].freqs;
+            let freq = currentChord[bgmStep % currentChord.length];
+            bgmStep++; // Move to the next note for the next tick
             
-            bgmOsc.frequency.setValueAtTime(freq * mod, now);
-            bgmOsc.frequency.exponentialRampToValueAtTime(freq * 0.95 * mod, now + (interval/2000));
+            let interval = 1200; // Slower, more relaxing default pace
+            if (pct <= 0.25) { interval = 350; bgmFilter.frequency.value = 1200; } // Panic: Faster, brighter sound
+            else if (pct <= 0.5) { interval = 600; bgmFilter.frequency.value = 800; } // Tension: Medium pace
+            else { bgmFilter.frequency.value = 400; } // Relaxed: Muffled and deep
+            
+            // Smoothly glide to the new note
+            bgmOsc.frequency.setTargetAtTime(freq, now, 0.1);
+            
+            // Premium ambient "pulse" envelope
+            bgmGain.gain.cancelScheduledValues(now);
+            bgmGain.gain.setValueAtTime(0.01, now);
+            bgmGain.gain.linearRampToValueAtTime(0.3, now + 0.1); // Swell up
+            bgmGain.gain.exponentialRampToValueAtTime(0.01, now + (interval/1000) * 0.8); // Fade out smoothly
             
             bgmTimeout = setTimeout(tickBGM, interval);
         }
 
         function playSound(type) {
             if (!audioCtx || state.audioMuted) return;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
             let now = audioCtx.currentTime;
+
+            // Helper to generate a quick, shaped sound
+            const createSynth = (waveType, startFreq, volume) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = waveType;
+                osc.frequency.setValueAtTime(startFreq, now);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                return { osc, gain };
+            };
+
             if (type === 'tap') {
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
-                gain.gain.setValueAtTime(1.0, now); // Louder Tap
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(); osc.stop(now + 0.1);
+                // Glassy, modern "tick" (High frequency sine wave, extremely short fade)
+                let synth = createSynth('sine', 1200, 0);
+                synth.gain.gain.setValueAtTime(0.8, now);
+                synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                synth.osc.start(now); synth.osc.stop(now + 0.05);
+                
             } else if (type === 'error') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                gain.gain.setValueAtTime(1.0, now); // Louder Error
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(); osc.stop(now + 0.2);
+                // Soft, muffled "thud"
+                let synth = createSynth('sine', 200, 0);
+                synth.gain.gain.setValueAtTime(1.0, now);
+                synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                synth.osc.frequency.exponentialRampToValueAtTime(50, now + 0.2); // Pitch drops slightly
+                synth.osc.start(now); synth.osc.stop(now + 0.2);
+                
             } else if (type === 'win') {
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.setValueAtTime(600, now + 0.1);
-                osc.frequency.setValueAtTime(900, now + 0.2);
-                gain.gain.setValueAtTime(1.0, now); // Louder Win
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                osc.start(); osc.stop(now + 0.4);
+                // Premium ascending "chime" (Plays a quick major chord)
+                const chimeNotes = [523.25, 659.25, 783.99, 1046.50]; // C Major arpeggio
+                chimeNotes.forEach((freq, i) => {
+                    let synth = createSynth('sine', freq, 0);
+                    let startTime = now + (i * 0.06); // Stagger the notes
+                    synth.gain.gain.setValueAtTime(0, now);
+                    synth.gain.gain.setValueAtTime(0.5, startTime);
+                    synth.gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                    synth.osc.start(startTime); synth.osc.stop(startTime + 0.5);
+                });
             }
         }
 
+        
         // Add sound to all buttons
         document.querySelectorAll('.btn, .tool, .util-btn, .btn-primary').forEach(el => {
             el.addEventListener('pointerdown', () => { initAudio(); playSound('tap'); });
         });
         document.body.addEventListener('pointerdown', initAudio, { once: true });
-
+        
         function updateAudioTrack() {
+            // Instantly sync the BGM to the new theme's starting note when a level changes
             if (bgmOsc && audioCtx && !state.audioMuted) {
-                bgmOsc.frequency.setValueAtTime(themes[state.themeIndex].baseFreq, audioCtx.currentTime);
+                bgmStep = 0; 
             }
         }
+
 
         DOM.audioBtn.addEventListener('click', () => {
             initAudio();
