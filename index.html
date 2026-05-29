@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kuro Logic - Glass OS</title>
     <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
     <style>
         :root {
-            /* Apple Glass UI Colors */
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.12);
             --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             --text-main: #ffffff;
             --text-muted: rgba(235, 235, 245, 0.6);
@@ -18,137 +18,135 @@
             --system-green: #30D158;
             --system-orange: #FF9F0A;
             
-            /* Dynamic Theme (Updates via JS) */
             --theme-color: var(--system-blue);
             --bg-gradient: radial-gradient(circle at 15% 50%, #1a1a2e, #0f0c29);
+            --blob-speed: 25s;
+            --blob-opacity: 0.4;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
             background: var(--bg-gradient); color: var(--text-main);
-            min-height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            min-height: 100dvh; height: 100dvh; overflow: hidden; display: flex; align-items: center; justify-content: center;
             transition: background 1s ease;
         }
 
-        /* Fluid Animated Background */
+        /* Fluid Background Blobs */
         .bg-blob {
-            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; z-index: -1;
-            animation: float 20s infinite alternate ease-in-out;
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); z-index: -1;
+            animation: float var(--blob-speed) infinite alternate ease-in-out;
+            transition: opacity 0.5s ease, filter 0.5s ease;
         }
         .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
         .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -10s; }
 
-        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(10vw, 10vh) scale(1.2); } }
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(8vw, 6vh) scale(1.1); } }
 
-        /* Main Container - Responsive Layout */
+        /* App container using dvh to prevent layout cutoff */
         #app {
-            width: 100%; max-width: 1000px; height: 100vh; max-height: 900px; padding: 20px;
-            display: grid; gap: 20px;
-            grid-template-rows: auto 1fr auto;
+            width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px;
+            display: grid; gap: 12px;
+            grid-template-rows: auto minmax(0, 1fr) auto;
             grid-template-columns: 1fr;
         }
         
-        /* Desktop Layout Override */
         @media (min-width: 768px) {
-            #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 320px; align-content: center; }
+            #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 340px; align-content: center; gap: 20px; padding: 25px;}
             header { grid-column: 1 / -1; }
             #sidebar { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
             #board-container { height: 100%; }
         }
 
-        /* Glass Panels */
         .glass-panel {
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 24px;
-            box-shadow: var(--glass-shadow); padding: 20px;
+            border: 1px solid var(--glass-border); border-radius: 22px;
+            box-shadow: var(--glass-shadow); padding: 16px;
         }
 
-        /* Header & Timer */
-        header { display: flex; justify-content: space-between; align-items: center; position: relative; }
-        .branding h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
-        .tier-name { font-size: 13px; color: var(--theme-color); font-weight: 500; }
-        .score-box { text-align: right; }
-        .score-val { font-size: 24px; font-weight: 700; color: var(--text-main); }
-        .score-label { font-size: 11px; color: var(--theme-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        header { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 14px 20px; }
+        .branding h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .tier-name { font-size: 12px; color: var(--theme-color); font-weight: 500; }
         
-        /* Timer Bar */
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .score-box { text-align: right; }
+        .score-val { font-size: 22px; font-weight: 700; }
+        .score-label { font-size: 10px; color: var(--theme-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        /* Utility Control Buttons */
+        .util-btn {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border);
+            color: white; width: 36px; height: 36px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 14px;
+        }
+
         .timer-container {
-            position: absolute; bottom: -10px; left: 0; width: 100%; height: 4px;
-            background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.08); overflow: hidden;
         }
         #timer-bar { height: 100%; background: var(--theme-color); width: 100%; transition: width 1s linear, background 0.3s; }
-        #timer-bar.danger { background: var(--system-red); }
 
-        /* Game Board */
-        #board-container { display: flex; align-items: center; justify-content: center; width: 100%; }
+        #board-container { display: flex; align-items: center; justify-content: center; width: 100%; padding: 5px; }
         #game-board {
-            display: grid; gap: 8px; padding: 12px; border-radius: 28px;
-            background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border);
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: all 0.4s ease;
+            display: grid; gap: 6px; padding: 10px; border-radius: 24px;
+            background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.4); transition: all 0.3s ease;
         }
+        
         .cell {
-            width: 16vw; height: 16vw; max-width: 65px; max-height: 65px;
-            background: rgba(255,255,255,0.05); border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.05); cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            width: 13vw; height: 13vw; max-width: 58px; max-height: 58px;
+            background: rgba(255,255,255,0.04); border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.03); cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             display: flex; justify-content: center; align-items: center; position: relative;
         }
-        .cell.active { background: var(--theme-color); box-shadow: 0 0 20px var(--theme-color); transform: scale(0.92); border-color: transparent; }
-        .cell.locked { background: var(--system-green); box-shadow: 0 0 15px var(--system-green); pointer-events: none; opacity: 0.8; }
+        .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); transform: scale(0.93); border-color: transparent; }
+        .cell.locked { background: var(--system-green); box-shadow: 0 0 14px var(--system-green); pointer-events: none; opacity: 0.85; }
         
-        /* The X Error State */
         .cell.error { border-color: var(--system-red); animation: shake 0.4s; }
-        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: 28px; font-weight: bold; text-shadow: 0 2px 10px rgba(255,69,58,0.5); }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: 24px; font-weight: bold; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
-        /* Sidebar / Controls */
-        .control-group { margin-bottom: 20px; }
-        .control-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-left: 5px; }
+        .control-group { margin-bottom: 14px; }
+        .control-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 2px; }
         
-        /* Tools */
-        .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .tool {
-            height: 60px; border-radius: 16px; background: rgba(255,255,255,0.05);
+            height: 54px; border-radius: 14px; background: rgba(255,255,255,0.04);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s;
         }
-        .tool span { font-size: 22px; font-weight: 300; margin-bottom: 2px; }
-        .tool label { font-size: 10px; pointer-events: none; }
-        .tool.selected { background: rgba(255,255,255,0.15); color: var(--theme-color); border-color: var(--theme-color); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .tool span { font-size: 20px; font-weight: 300; margin-bottom: 1px; }
+        .tool label { font-size: 9px; }
+        .tool.selected { background: rgba(255,255,255,0.12); color: var(--theme-color); border-color: var(--theme-color); }
 
-        /* Actions (Superpowers) */
-        .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .btn {
-            padding: 14px 10px; border-radius: 16px; background: rgba(255,255,255,0.05);
-            color: var(--text-main); border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
-            cursor: pointer; transition: 0.2s;
+            padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,0.04);
+            color: var(--text-main); border: 1px solid var(--glass-border); font-size: 12px; font-weight: 500;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; cursor: pointer;
         }
-        .btn:active { transform: scale(0.95); }
-        .btn-cost { font-size: 10px; color: var(--theme-color); font-weight: 700; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 8px; }
-        
-        .btn-check { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
-        .btn-check:hover { background: rgba(255,255,255,0.2); }
+        .btn:active { transform: scale(0.96); }
+        .btn-cost { font-size: 9px; color: var(--theme-color); font-weight: 700; background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 6px; }
+        .btn-check { background: rgba(255,255,255,0.08); }
 
-        /* Modals */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; padding: 20px;
         }
         .modal.show { opacity: 1; pointer-events: all; }
         .modal-content {
-            background: rgba(30, 30, 40, 0.8); border: 1px solid var(--glass-border);
-            padding: 30px; border-radius: 32px; text-align: center; max-width: 400px; width: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            background: rgba(25, 25, 35, 0.85); border: 1px solid var(--glass-border);
+            padding: 24px; border-radius: 28px; text-align: center; max-width: 380px; width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
         }
-        .modal h2 { font-size: 28px; margin-bottom: 10px; color: var(--text-main); font-weight: 700;}
-        .modal p { color: var(--text-muted); font-size: 15px; margin-bottom: 25px; line-height: 1.5; }
+        .modal h2 { font-size: 24px; margin-bottom: 8px; font-weight: 700;}
+        .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
         .btn-primary {
-            width: 100%; padding: 16px; background: var(--text-main); color: #000;
-            border-radius: 20px; font-size: 16px; font-weight: 600; border: none; cursor: pointer;
+            width: 100%; padding: 14px; background: var(--text-main); color: #000;
+            border-radius: 16px; font-size: 15px; font-weight: 600; border: none; cursor: pointer;
         }
     </style>
 </head>
@@ -163,9 +161,13 @@
                 <h1>KURO</h1>
                 <div id="tier-display" class="tier-name">OS Level 1</div>
             </div>
-            <div class="score-box">
-                <div id="score-display" class="score-val">0</div>
-                <div class="score-label">Logic IQ</div>
+            <div class="header-right">
+                <div class="score-box">
+                    <div id="score-display" class="score-val">0</div>
+                    <div class="score-label">Logic IQ</div>
+                </div>
+                <button class="util-btn" id="btn-install" style="display: none;" title="Install App">📥</button>
+                <button class="util-btn" id="btn-audio" title="Mute/Unmute">🔊</button>
             </div>
             <div class="timer-container"><div id="timer-bar"></div></div>
         </header>
@@ -208,7 +210,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="msg-modal" class="modal">
         <div class="modal-content">
             <h2 id="msg-title">Title</h2>
@@ -225,23 +226,24 @@
             gridSize: 3,
             target: [],
             current: [],
-            locked: [], // Cells locked by Hint power
+            locked: [],
             activeTool: 'dot',
             isMemorizing: false,
             timeTotal: 60,
             timeLeft: 60,
             timerId: null,
-            costs: { peek: 0, hint: 0, skip: 0 }
+            costs: { peek: 0, hint: 0, skip: 0 },
+            audioMuted: false,
+            themeIndex: 0
         };
 
         const themes = [
-            { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)" },
-            { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #003314, #000000)" },
-            { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #330000, #000000)" },
-            { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #1a0033, #000000)" }
+            { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)", baseFreq: 110 },
+            { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #00220e, #000000)", baseFreq: 130 },
+            { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #220000, #000000)", baseFreq: 90 },
+            { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #140024, #000000)", baseFreq: 150 }
         ];
 
-        // --- DOM Elements ---
         const DOM = {
             board: document.getElementById('game-board'),
             tierDisplay: document.getElementById('tier-display'),
@@ -251,17 +253,128 @@
             modal: document.getElementById('msg-modal'),
             modalTitle: document.getElementById('msg-title'),
             modalDesc: document.getElementById('msg-desc'),
-            modalBtn: document.getElementById('btn-modal-action')
+            modalBtn: document.getElementById('btn-modal-action'),
+            audioBtn: document.getElementById('btn-audio'),
+            installBtn: document.getElementById('btn-install')
         };
 
-        // --- Initialization ---
+        // --- Web Audio Engine (Pure Code Synthesis) ---
+        let audioCtx = null;
+        let bgmOsc = null;
+        let bgmGain = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            startBmitter();
+        }
+
+        function startBmitter() {
+            if (!audioCtx || state.audioMuted) return;
+            try {
+                bgmOsc = audioCtx.createOscillator();
+                bgmGain = audioCtx.createGain();
+                
+                bgmOsc.type = 'triangle';
+                let freq = themes[state.themeIndex].baseFreq;
+                bgmOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                bgmGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                
+                bgmOsc.connect(bgmGain);
+                bgmGain.connect(audioCtx.destination);
+                bgmOsc.start();
+                
+                // Simple ambient pulsation loop
+                setInterval(() => {
+                    if (!state.audioMuted && bgmOsc && audioCtx) {
+                        let now = audioCtx.currentTime;
+                        let isDanger = (state.timeLeft / state.timeTotal) <= 0.25;
+                        let mod = isDanger ? 1.5 : 1.0; // Higher frequency step during time strain
+                        bgmOsc.frequency.setValueAtTime(freq * mod, now);
+                        bgmOsc.frequency.exponentialRampToValueAtTime(freq * 0.95 * mod, now + 0.4);
+                    }
+                }, 800);
+            } catch(e) { console.log(e); }
+        }
+
+        function playSound(type) {
+            if (!audioCtx || state.audioMuted) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            let now = audioCtx.currentTime;
+            if (type === 'tap') {
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(); osc.stop(now + 0.2);
+            } else if (type === 'win') {
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(600, now + 0.1);
+                osc.frequency.setValueAtTime(900, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(); osc.stop(now + 0.4);
+            }
+        }
+
+        function updateAudioTrack() {
+            if (bgmOsc && audioCtx && !state.audioMuted) {
+                bgmOsc.frequency.setValueAtTime(themes[state.themeIndex].baseFreq, audioCtx.currentTime);
+            }
+        }
+
+        DOM.audioBtn.addEventListener('click', () => {
+            initAudio();
+            state.audioMuted = !state.audioMuted;
+            DOM.audioBtn.innerText = state.audioMuted ? '🔇' : '🔊';
+            if (state.audioMuted) {
+                if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; }
+            } else {
+                startBmitter();
+            }
+        });
+
+        // --- Native PWA Install Handler ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            DOM.installBtn.style.display = 'flex';
+        });
+
+        DOM.installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                deferredPrompt = null;
+                DOM.installBtn.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            DOM.installBtn.style.display = 'none';
+        });
+
+        // --- Core Application Initialization ---
         function initGame() {
             updateScoreUI();
             startLevel();
         }
 
         function calculateEconomy() {
-            // Dynamic scaling based on level
             state.costs.peek = Math.floor(20 + (state.level * 10));
             state.costs.hint = Math.floor(40 + (state.level * 15));
             state.costs.skip = Math.floor(150 + (state.level * 50));
@@ -273,27 +386,28 @@
 
         function startLevel() {
             calculateEconomy();
-            
             state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 4), 6);
-            let themeIdx = Math.min(Math.floor((state.level - 1) / 4), themes.length - 1);
+            state.themeIndex = Math.min(Math.floor((state.level - 1) / 4), themes.length - 1);
             
-            document.documentElement.style.setProperty('--theme-color', themes[themeIdx].color);
-            document.documentElement.style.setProperty('--bg-gradient', themes[themeIdx].bg);
+            document.documentElement.style.setProperty('--theme-color', themes[state.themeIndex].color);
+            document.documentElement.style.setProperty('--bg-gradient', themes[themeIdx = state.themeIndex].bg);
+            document.documentElement.style.setProperty('--blob-speed', '25s');
+            document.documentElement.style.setProperty('--blob-opacity', '0.4');
             
-            DOM.tierDisplay.innerText = `${themes[themeIdx].name} OS • Lv ${state.level}`;
+            DOM.tierDisplay.innerText = `${themes[state.themeIndex].name} OS • Lv ${state.level}`;
             DOM.board.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
             
-            state.timeTotal = 30 + (state.gridSize * 15);
+            state.timeTotal = Math.max(20, 45 + (state.gridSize * 10) - (state.level * 2));
             state.timeLeft = state.timeTotal;
-            DOM.timerBar.classList.remove('danger');
+            DOM.timerBar.style.background = 'var(--theme-color)';
             DOM.timerBar.style.width = '100%';
             
+            updateAudioTrack();
             generateTarget();
             renderBoard();
             flashPattern();
         }
 
-        // --- Core Logic ---
         function generateTarget() {
             const totalCells = state.gridSize * state.gridSize;
             state.target = Array(totalCells).fill(false);
@@ -314,8 +428,7 @@
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 cell.dataset.index = i;
-                // Unified pointer event for desktop and mobile
-                cell.addEventListener('pointerdown', (e) => { e.preventDefault(); handleCellTap(i, cell); });
+                cell.addEventListener('pointerdown', (e) => { e.preventDefault(); initAudio(); handleCellTap(i, cell); });
                 DOM.board.appendChild(cell);
             }
             updateBoardVisuals();
@@ -345,19 +458,24 @@
                 const pct = (state.timeLeft / state.timeTotal) * 100;
                 DOM.timerBar.style.width = `${pct}%`;
                 
-                if(pct <= 20) DOM.timerBar.classList.add('danger');
+                if(pct <= 25) {
+                    // Pressure escalation mechanics
+                    DOM.timerBar.style.background = 'var(--system-red)';
+                    document.documentElement.style.setProperty('--blob-speed', '3s');
+                    document.documentElement.style.setProperty('--blob-opacity', '0.7');
+                }
                 
                 if(state.timeLeft <= 0) {
                     clearInterval(state.timerId);
-                    showModal("Time Expired", "Your focus faded. The pattern was lost.", "Retry Level", startLevel);
+                    playSound('error');
+                    showModal("Time Expired", "Your focus faded. The system collapsed.", "Retry Level", startLevel);
                 }
             }, 1000);
         }
 
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
-            
-            // Clear any error states globally on next interaction
+            playSound('tap');
             document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
 
             const row = Math.floor(index / state.gridSize);
@@ -366,7 +484,7 @@
             const toggle = (r, c) => {
                 if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
                     let idx = r * state.gridSize + c;
-                    if(!state.locked[idx]) { // Cannot flip locked (hinted) cells
+                    if(!state.locked[idx]) {
                         state.current[idx] = !state.current[idx];
                     }
                 }
@@ -384,34 +502,26 @@
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
-                cell.className = 'cell'; // Reset classes
+                cell.className = 'cell';
                 if(state.current[i]) cell.classList.add('active');
-                if(state.locked[i]) cell.classList.add('locked'); // Hinted cells turn green
+                if(state.locked[i]) cell.classList.add('locked');
             });
         }
-
-        // --- Super Powers & Actions ---
         
-        // Check Button (Free): Highlights incorrectly placed blocks
+        // --- Power Shop ---
         document.getElementById('btn-check').addEventListener('click', () => {
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             let foundError = false;
             for(let i=0; i<state.current.length; i++) {
-                // If user activated it, but target is false
                 if(state.current[i] === true && state.target[i] === false) {
                     cells[i].classList.add('error');
                     foundError = true;
                 }
             }
-            if(!foundError) {
-                // Flash green to indicate no incorrect blocks (even if incomplete)
-                DOM.board.style.borderColor = 'var(--system-green)';
-                setTimeout(() => DOM.board.style.borderColor = 'var(--glass-border)', 500);
-            }
+            if(foundError) playSound('error');
         });
 
-        // Peek Power
         document.getElementById('btn-peek').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.peek)) return;
             const tempCurrent = [...state.current];
@@ -419,20 +529,15 @@
             setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
         });
 
-        // Hint Power (Auto-solve 1 cell)
         document.getElementById('btn-hint').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.hint)) return;
-            
-            // Find a cell that is not yet locked, and where current state != target state
             let diffIndices = [];
             for(let i=0; i<state.target.length; i++) {
                 if(!state.locked[i] && state.current[i] !== state.target[i]) {
                     diffIndices.push(i);
                 }
             }
-            
             if(diffIndices.length > 0) {
-                // Pick random wrong cell, fix it, and lock it
                 let fixIndex = diffIndices[Math.floor(Math.random() * diffIndices.length)];
                 state.current[fixIndex] = state.target[fixIndex];
                 state.locked[fixIndex] = true;
@@ -441,32 +546,29 @@
             }
         });
 
-        // Skip Level Power
         document.getElementById('btn-skip').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.skip)) return;
-            state.current = [...state.target]; // Force win
+            state.current = [...state.target];
             updateBoardVisuals();
             checkWin();
         });
 
-        // Economy Helper
         function deductIQ(amount) {
             if(state.score >= amount) {
                 state.score -= amount;
                 updateScoreUI();
                 return true;
             } else {
-                DOM.scoreDisplay.style.color = 'var(--system-red)';
-                setTimeout(() => DOM.scoreDisplay.style.color = 'var(--text-main)', 500);
+                playSound('error');
                 return false;
             }
         }
 
-        // --- Win Logic ---
         function checkWin() {
             if(state.current.every((val, index) => val === state.target[index])) {
                 state.isMemorizing = true;
                 clearInterval(state.timerId);
+                playSound('win');
                 
                 const baseScore = 100 + (state.level * 20);
                 const timeBonus = state.timeLeft * 5;
@@ -495,7 +597,6 @@
             DOM.scoreDisplay.innerText = state.score;
         }
 
-        // --- UI Interactions ---
         DOM.tools.forEach(tool => {
             tool.addEventListener('click', () => {
                 DOM.tools.forEach(t => t.classList.remove('selected'));
@@ -504,22 +605,18 @@
             });
         });
 
-        // Modal System
         function showModal(title, desc, btnText, action) {
             DOM.modalTitle.innerHTML = title;
             DOM.modalDesc.innerHTML = desc;
             DOM.modalBtn.innerText = btnText;
             DOM.modal.classList.add('show');
-            
             DOM.modalBtn.onclick = () => {
                 DOM.modal.classList.remove('show');
                 action();
             };
         }
 
-        // Prevent double-tap zoom on iOS Safari
         document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
-
         initGame();
     </script>
 </body>
