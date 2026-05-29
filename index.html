@@ -87,8 +87,8 @@
 
         #board-container { 
             display: flex; align-items: center; justify-content: center; 
-            width: 100%; height: 100%; padding: 5px; 
-            overflow: hidden; /* Prevents the board from ever pushing into the header/footer */
+            width: 100%; height: 100%; padding: 10px; 
+            /* overflow: hidden; /* Prevents the board from ever pushing into the header/footer */ */
         }
         
         #game-board {
@@ -101,7 +101,7 @@
             
             /* The Magic Formula: Always stay square, never overflow the screen */
             width: 100%;
-            max-width: min(100vw - 40px, 65vh); 
+            max-width: min(100vw - 60px, 55vh); 
             aspect-ratio: 1 / 1; 
         }
         
