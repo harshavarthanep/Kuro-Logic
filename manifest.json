@@ -1,8 +1,8 @@
 {
-  "name": "Kuro Logic",
+  "name": "Kuro Grid",
   "short_name": "Kuro",
   "description": "A minimalist logic and memory puzzle.",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
