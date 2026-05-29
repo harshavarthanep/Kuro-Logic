@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kuro Logic - Glass OS</title>
+    <meta name="theme-color" content="#000000">
+    <style>
+        :root {
+            /* Apple Glass UI Colors */
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --text-main: #ffffff;
+            --text-muted: rgba(235, 235, 245, 0.6);
+            --system-blue: #0A84FF;
+            --system-red: #FF453A;
+            --system-green: #30D158;
+            --system-orange: #FF9F0A;
+            
+            /* Dynamic Theme (Updates via JS) */
+            --theme-color: var(--system-blue);
+            --bg-gradient: radial-gradient(circle at 15% 50%, #1a1a2e, #0f0c29);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background: var(--bg-gradient); color: var(--text-main);
+            min-height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            transition: background 1s ease;
+        }
+
+        /* Fluid Animated Background */
+        .bg-blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; z-index: -1;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
+        .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -10s; }
+
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(10vw, 10vh) scale(1.2); } }
+
+        /* Main Container - Responsive Layout */
+        #app {
+            width: 100%; max-width: 1000px; height: 100vh; max-height: 900px; padding: 20px;
+            display: grid; gap: 20px;
+            grid-template-rows: auto 1fr auto;
+            grid-template-columns: 1fr;
+        }
+        
+        /* Desktop Layout Override */
+        @media (min-width: 768px) {
+            #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 320px; align-content: center; }
+            header { grid-column: 1 / -1; }
+            #sidebar { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
+            #board-container { height: 100%; }
+        }
+
+        /* Glass Panels */
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            box-shadow: var(--glass-shadow); padding: 20px;
+        }
+
+        /* Header & Timer */
+        header { display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .branding h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+        .tier-name { font-size: 13px; color: var(--theme-color); font-weight: 500; }
+        .score-box { text-align: right; }
+        .score-val { font-size: 24px; font-weight: 700; color: var(--text-main); }
+        .score-label { font-size: 11px; color: var(--theme-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        /* Timer Bar */
+        .timer-container {
+            position: absolute; bottom: -10px; left: 0; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+        }
+        #timer-bar { height: 100%; background: var(--theme-color); width: 100%; transition: width 1s linear, background 0.3s; }
+        #timer-bar.danger { background: var(--system-red); }
+
+        /* Game Board */
+        #board-container { display: flex; align-items: center; justify-content: center; width: 100%; }
+        #game-board {
+            display: grid; gap: 8px; padding: 12px; border-radius: 28px;
+            background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: all 0.4s ease;
+        }
+        .cell {
+            width: 16vw; height: 16vw; max-width: 65px; max-height: 65px;
+            background: rgba(255,255,255,0.05); border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .cell.active { background: var(--theme-color); box-shadow: 0 0 20px var(--theme-color); transform: scale(0.92); border-color: transparent; }
+        .cell.locked { background: var(--system-green); box-shadow: 0 0 15px var(--system-green); pointer-events: none; opacity: 0.8; }
+        
+        /* The X Error State */
+        .cell.error { border-color: var(--system-red); animation: shake 0.4s; }
+        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: 28px; font-weight: bold; text-shadow: 0 2px 10px rgba(255,69,58,0.5); }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+        /* Sidebar / Controls */
+        .control-group { margin-bottom: 20px; }
+        .control-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-left: 5px; }
+        
+        /* Tools */
+        .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .tool {
+            height: 60px; border-radius: 16px; background: rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s;
+        }
+        .tool span { font-size: 22px; font-weight: 300; margin-bottom: 2px; }
+        .tool label { font-size: 10px; pointer-events: none; }
+        .tool.selected { background: rgba(255,255,255,0.15); color: var(--theme-color); border-color: var(--theme-color); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+        /* Actions (Superpowers) */
+        .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .btn {
+            padding: 14px 10px; border-radius: 16px; background: rgba(255,255,255,0.05);
+            color: var(--text-main); border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-cost { font-size: 10px; color: var(--theme-color); font-weight: 700; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 8px; }
+        
+        .btn-check { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+        .btn-check:hover { background: rgba(255,255,255,0.2); }
+
+        /* Modals */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; padding: 20px;
+        }
+        .modal.show { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: rgba(30, 30, 40, 0.8); border: 1px solid var(--glass-border);
+            padding: 30px; border-radius: 32px; text-align: center; max-width: 400px; width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal h2 { font-size: 28px; margin-bottom: 10px; color: var(--text-main); font-weight: 700;}
+        .modal p { color: var(--text-muted); font-size: 15px; margin-bottom: 25px; line-height: 1.5; }
+        .btn-primary {
+            width: 100%; padding: 16px; background: var(--text-main); color: #000;
+            border-radius: 20px; font-size: 16px; font-weight: 600; border: none; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div id="app">
+        <header class="glass-panel">
+            <div class="branding">
+                <h1>KURO</h1>
+                <div id="tier-display" class="tier-name">OS Level 1</div>
+            </div>
+            <div class="score-box">
+                <div id="score-display" class="score-val">0</div>
+                <div class="score-label">Logic IQ</div>
+            </div>
+            <div class="timer-container"><div id="timer-bar"></div></div>
+        </header>
+
+        <div id="board-container">
+            <div id="game-board"></div>
+        </div>
+
+        <div id="sidebar" class="glass-panel">
+            <div class="control-group">
+                <div class="control-title">Logic Tools</div>
+                <div class="tool-row" id="tools">
+                    <div class="tool selected" data-type="dot"><span>■</span><label>Point</label></div>
+                    <div class="tool" data-type="plus"><span>+</span><label>Cross</label></div>
+                    <div class="tool" data-type="cross"><span>×</span><label>Diag</label></div>
+                </div>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 0;">
+                <div class="control-title">Super Powers (Store)</div>
+                <div class="action-row">
+                    <button class="btn btn-check" id="btn-check">
+                        <div>✓ Verify Moves</div>
+                        <div class="btn-cost" style="color:var(--text-main)">FREE</div>
+                    </button>
+                    <button class="btn" id="btn-hint">
+                        <div>💡 Auto-Solve 1</div>
+                        <div class="btn-cost" id="cost-hint">50 IQ</div>
+                    </button>
+                    <button class="btn" id="btn-peek">
+                        <div>👁 Flash Pattern</div>
+                        <div class="btn-cost" id="cost-peek">30 IQ</div>
+                    </button>
+                    <button class="btn" id="btn-skip">
+                        <div>⏭ Skip Level</div>
+                        <div class="btn-cost" id="cost-skip">200 IQ</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="msg-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="msg-title">Title</h2>
+            <p id="msg-desc">Description</p>
+            <button class="btn-primary" id="btn-modal-action">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let state = {
+            level: parseInt(localStorage.getItem('kuro_level')) || 1,
+            score: parseInt(localStorage.getItem('kuro_score')) || 0,
+            gridSize: 3,
+            target: [],
+            current: [],
+            locked: [], // Cells locked by Hint power
+            activeTool: 'dot',
+            isMemorizing: false,
+            timeTotal: 60,
+            timeLeft: 60,
+            timerId: null,
+            costs: { peek: 0, hint: 0, skip: 0 }
+        };
+
+        const themes = [
+            { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)" },
+            { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #003314, #000000)" },
+            { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #330000, #000000)" },
+            { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #1a0033, #000000)" }
+        ];
+
+        // --- DOM Elements ---
+        const DOM = {
+            board: document.getElementById('game-board'),
+            tierDisplay: document.getElementById('tier-display'),
+            scoreDisplay: document.getElementById('score-display'),
+            timerBar: document.getElementById('timer-bar'),
+            tools: document.querySelectorAll('.tool'),
+            modal: document.getElementById('msg-modal'),
+            modalTitle: document.getElementById('msg-title'),
+            modalDesc: document.getElementById('msg-desc'),
+            modalBtn: document.getElementById('btn-modal-action')
+        };
+
+        // --- Initialization ---
+        function initGame() {
+            updateScoreUI();
+            startLevel();
+        }
+
+        function calculateEconomy() {
+            // Dynamic scaling based on level
+            state.costs.peek = Math.floor(20 + (state.level * 10));
+            state.costs.hint = Math.floor(40 + (state.level * 15));
+            state.costs.skip = Math.floor(150 + (state.level * 50));
+            
+            document.getElementById('cost-peek').innerText = state.costs.peek + ' IQ';
+            document.getElementById('cost-hint').innerText = state.costs.hint + ' IQ';
+            document.getElementById('cost-skip').innerText = state.costs.skip + ' IQ';
+        }
+
+        function startLevel() {
+            calculateEconomy();
+            
+            state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 4), 6);
+            let themeIdx = Math.min(Math.floor((state.level - 1) / 4), themes.length - 1);
+            
+            document.documentElement.style.setProperty('--theme-color', themes[themeIdx].color);
+            document.documentElement.style.setProperty('--bg-gradient', themes[themeIdx].bg);
+            
+            DOM.tierDisplay.innerText = `${themes[themeIdx].name} OS • Lv ${state.level}`;
+            DOM.board.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            
+            state.timeTotal = 30 + (state.gridSize * 15);
+            state.timeLeft = state.timeTotal;
+            DOM.timerBar.classList.remove('danger');
+            DOM.timerBar.style.width = '100%';
+            
+            generateTarget();
+            renderBoard();
+            flashPattern();
+        }
+
+        // --- Core Logic ---
+        function generateTarget() {
+            const totalCells = state.gridSize * state.gridSize;
+            state.target = Array(totalCells).fill(false);
+            state.current = Array(totalCells).fill(false);
+            state.locked = Array(totalCells).fill(false);
+            
+            const flips = state.level * 2; 
+            for(let i=0; i<flips; i++) {
+                let rIndex = Math.floor(Math.random() * totalCells);
+                state.target[rIndex] = !state.target[rIndex];
+            }
+            if(!state.target.includes(true)) state.target[0] = true; 
+        }
+
+        function renderBoard() {
+            DOM.board.innerHTML = '';
+            for(let i = 0; i < state.gridSize * state.gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                // Unified pointer event for desktop and mobile
+                cell.addEventListener('pointerdown', (e) => { e.preventDefault(); handleCellTap(i, cell); });
+                DOM.board.appendChild(cell);
+            }
+            updateBoardVisuals();
+        }
+
+        function flashPattern() {
+            state.isMemorizing = true;
+            clearInterval(state.timerId);
+            
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, i) => {
+                if(state.target[i]) cell.classList.add('active');
+                else cell.classList.remove('active');
+            });
+            
+            setTimeout(() => {
+                state.isMemorizing = false;
+                updateBoardVisuals();
+                startTimer();
+            }, Math.max(1000, 3000 - (state.level * 100)));
+        }
+
+        function startTimer() {
+            clearInterval(state.timerId);
+            state.timerId = setInterval(() => {
+                state.timeLeft--;
+                const pct = (state.timeLeft / state.timeTotal) * 100;
+                DOM.timerBar.style.width = `${pct}%`;
+                
+                if(pct <= 20) DOM.timerBar.classList.add('danger');
+                
+                if(state.timeLeft <= 0) {
+                    clearInterval(state.timerId);
+                    showModal("Time Expired", "Your focus faded. The pattern was lost.", "Retry Level", startLevel);
+                }
+            }, 1000);
+        }
+
+        function handleCellTap(index, cellEl) {
+            if(state.isMemorizing) return;
+            
+            // Clear any error states globally on next interaction
+            document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+
+            const row = Math.floor(index / state.gridSize);
+            const col = index % state.gridSize;
+
+            const toggle = (r, c) => {
+                if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
+                    let idx = r * state.gridSize + c;
+                    if(!state.locked[idx]) { // Cannot flip locked (hinted) cells
+                        state.current[idx] = !state.current[idx];
+                    }
+                }
+            }
+
+            if (state.activeTool === 'dot') { toggle(row, col); }
+            if (state.activeTool === 'plus') { toggle(row, col); toggle(row-1, col); toggle(row+1, col); toggle(row, col-1); toggle(row, col+1); }
+            if (state.activeTool === 'cross') { toggle(row, col); toggle(row-1, col-1); toggle(row-1, col+1); toggle(row+1, col-1); toggle(row+1, col+1); }
+
+            updateBoardVisuals();
+            checkWin();
+        }
+
+        function updateBoardVisuals() {
+            if(state.isMemorizing) return;
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, i) => {
+                cell.className = 'cell'; // Reset classes
+                if(state.current[i]) cell.classList.add('active');
+                if(state.locked[i]) cell.classList.add('locked'); // Hinted cells turn green
+            });
+        }
+
+        // --- Super Powers & Actions ---
+        
+        // Check Button (Free): Highlights incorrectly placed blocks
+        document.getElementById('btn-check').addEventListener('click', () => {
+            if(state.isMemorizing) return;
+            const cells = document.querySelectorAll('.cell');
+            let foundError = false;
+            for(let i=0; i<state.current.length; i++) {
+                // If user activated it, but target is false
+                if(state.current[i] === true && state.target[i] === false) {
+                    cells[i].classList.add('error');
+                    foundError = true;
+                }
+            }
+            if(!foundError) {
+                // Flash green to indicate no incorrect blocks (even if incomplete)
+                DOM.board.style.borderColor = 'var(--system-green)';
+                setTimeout(() => DOM.board.style.borderColor = 'var(--glass-border)', 500);
+            }
+        });
+
+        // Peek Power
+        document.getElementById('btn-peek').addEventListener('click', () => {
+            if(state.isMemorizing || !deductIQ(state.costs.peek)) return;
+            const tempCurrent = [...state.current];
+            flashPattern();
+            setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
+        });
+
+        // Hint Power (Auto-solve 1 cell)
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            if(state.isMemorizing || !deductIQ(state.costs.hint)) return;
+            
+            // Find a cell that is not yet locked, and where current state != target state
+            let diffIndices = [];
+            for(let i=0; i<state.target.length; i++) {
+                if(!state.locked[i] && state.current[i] !== state.target[i]) {
+                    diffIndices.push(i);
+                }
+            }
+            
+            if(diffIndices.length > 0) {
+                // Pick random wrong cell, fix it, and lock it
+                let fixIndex = diffIndices[Math.floor(Math.random() * diffIndices.length)];
+                state.current[fixIndex] = state.target[fixIndex];
+                state.locked[fixIndex] = true;
+                updateBoardVisuals();
+                checkWin();
+            }
+        });
+
+        // Skip Level Power
+        document.getElementById('btn-skip').addEventListener('click', () => {
+            if(state.isMemorizing || !deductIQ(state.costs.skip)) return;
+            state.current = [...state.target]; // Force win
+            updateBoardVisuals();
+            checkWin();
+        });
+
+        // Economy Helper
+        function deductIQ(amount) {
+            if(state.score >= amount) {
+                state.score -= amount;
+                updateScoreUI();
+                return true;
+            } else {
+                DOM.scoreDisplay.style.color = 'var(--system-red)';
+                setTimeout(() => DOM.scoreDisplay.style.color = 'var(--text-main)', 500);
+                return false;
+            }
+        }
+
+        // --- Win Logic ---
+        function checkWin() {
+            if(state.current.every((val, index) => val === state.target[index])) {
+                state.isMemorizing = true;
+                clearInterval(state.timerId);
+                
+                const baseScore = 100 + (state.level * 20);
+                const timeBonus = state.timeLeft * 5;
+                const earned = baseScore + timeBonus;
+                
+                state.score += earned;
+                localStorage.setItem('kuro_score', state.score);
+                updateScoreUI();
+
+                setTimeout(() => {
+                    showModal(
+                        `Level ${state.level} Complete`, 
+                        `Base IQ: +${baseScore}<br>Time Bonus: +${timeBonus}<br>Total Logic IQ: ${state.score}`, 
+                        "Next Level ➔", 
+                        () => {
+                            state.level++;
+                            localStorage.setItem('kuro_level', state.level);
+                            startLevel();
+                        }
+                    );
+                }, 600);
+            }
+        }
+
+        function updateScoreUI() {
+            DOM.scoreDisplay.innerText = state.score;
+        }
+
+        // --- UI Interactions ---
+        DOM.tools.forEach(tool => {
+            tool.addEventListener('click', () => {
+                DOM.tools.forEach(t => t.classList.remove('selected'));
+                tool.classList.add('selected');
+                state.activeTool = tool.dataset.type;
+            });
+        });
+
+        // Modal System
+        function showModal(title, desc, btnText, action) {
+            DOM.modalTitle.innerHTML = title;
+            DOM.modalDesc.innerHTML = desc;
+            DOM.modalBtn.innerText = btnText;
+            DOM.modal.classList.add('show');
+            
+            DOM.modalBtn.onclick = () => {
+                DOM.modal.classList.remove('show');
+                action();
+            };
+        }
+
+        // Prevent double-tap zoom on iOS Safari
+        document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
+
+        initGame();
+    </script>
+</body>
+</html>
