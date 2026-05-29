@@ -467,7 +467,7 @@
 
         function startLevel() {
             calculateEconomy();
-            state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 4), 6);
+            state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 4), 7);
             state.themeIndex = Math.min(Math.floor((state.level - 1) / 4), themes.length - 1);
             
             document.documentElement.style.setProperty('--theme-color', themes[state.themeIndex].color);
@@ -477,6 +477,7 @@
             
             DOM.tierDisplay.innerText = `${themes[state.themeIndex].name} OS • Lv ${state.level}`;
             DOM.board.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            DOM.board.style.gridTemplateRows = `repeat(${state.gridSize}, 1fr)`;
             
             state.timeTotal = Math.max(20, 45 + (state.gridSize * 10) - (state.level * 2));
             state.timeLeft = state.timeTotal;
