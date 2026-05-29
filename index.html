@@ -327,7 +327,7 @@
             // Premium ambient "pulse" envelope
             bgmGain.gain.cancelScheduledValues(now);
             bgmGain.gain.setValueAtTime(0.01, now);
-            bgmGain.gain.linearRampToValueAtTime(0.3, now + 0.1); // Swell up
+            bgmGain.gain.linearRampToValueAtTime(0.8, now + 0.1); // Swell up
             bgmGain.gain.exponentialRampToValueAtTime(0.01, now + (interval/1000) * 0.8); // Fade out smoothly
             
             bgmTimeout = setTimeout(tickBGM, interval);
@@ -357,8 +357,8 @@
                 
             } else if (type === 'error') {
                 // Soft, muffled "thud"
-                let synth = createSynth('sine', 200, 0);
-                synth.gain.gain.setValueAtTime(1.0, now);
+                let synth = createSynth('triangle', 200, 0);
+                synth.gain.gain.setValueAtTime(2.5, now);
                 synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 synth.osc.frequency.exponentialRampToValueAtTime(50, now + 0.2); // Pitch drops slightly
                 synth.osc.start(now); synth.osc.stop(now + 0.2);
