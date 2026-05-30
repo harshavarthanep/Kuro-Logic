@@ -183,6 +183,18 @@
             width: 100%; padding: 14px; background: var(--text-main); color: #000;
             border-radius: 16px; font-size: 15px; font-weight: 600; border: none; cursor: pointer;
         }
+        .watermark {
+        position: absolute;
+        bottom: 8px; /* Floats just above the bottom edge */
+        width: 100%;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.25); /* Subtle, slightly transparent */
+        pointer-events: none; /* CRITICAL: Prevents it from blocking taps */
+        z-index: 50;
+        letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -259,7 +271,7 @@
             <button class="btn-primary" id="btn-modal-action">Continue</button>
         </div>
     </div>
-
+    <div class="watermark">Made with ❤️ by Harsha Varthan E P</div>
     <script>
         // --- State Management ---
         let state = {
