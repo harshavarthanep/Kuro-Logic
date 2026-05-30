@@ -384,39 +384,43 @@
             document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
         });
 
-        // --- PWA Install Handler (Bulletproofed) ---
+        // --- Native PWA Install Handler ---
         let deferredPrompt;
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         
-        if (!isStandalone) {
-            // Always show the button if not installed to handle iOS gracefully
-            DOM.installBtn.style.display = 'flex';
-        }
-
+        // 1. Intercept the browser's native install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the default mini-infobar from appearing automatically
             e.preventDefault();
+            // Stash the event so it can be triggered later by your custom button
             deferredPrompt = e;
-            DOM.installBtn.style.display = 'flex';
+            // Reveal your custom install button in the UI
+            DOM.installBtn.style.display = 'flex'; 
         });
-
+        
+        // 2. Handle the user clicking your custom install button
         DOM.installBtn.addEventListener('click', async () => {
-            triggerHaptic('medium');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    deferredPrompt = null;
-                    DOM.installBtn.style.display = 'none';
-                }
-            } else {
-                // iOS Fallback / Instruction
-                showModal("Install Kuro Logic", "To install on iOS, tap the Share icon at the bottom of your browser and select 'Add to Home Screen'.", "Got it", () => {}, false);
+            // If the prompt isn't available, do nothing
+            if (!deferredPrompt) return; 
+            
+            // Trigger the native browser install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user's choice (Install or Cancel)
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            // If they successfully installed the app, clean up the UI
+            if (outcome === 'accepted') {
+                deferredPrompt = null;
+                DOM.installBtn.style.display = 'none';
             }
         });
-
+        
+        // 3. Listen for the actual installation event to finalize cleanup
         window.addEventListener('appinstalled', () => {
+            // The app was installed successfully (either via your button or the browser menu)
             deferredPrompt = null;
             DOM.installBtn.style.display = 'none';
+            console.log('App successfully installed!');
         });
 
         // --- Core Application Initialization ---
