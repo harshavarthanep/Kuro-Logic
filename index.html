@@ -6,6 +6,8 @@
     <title>Kuro Logic - Glass OS</title>
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.06);
@@ -500,6 +502,11 @@
             DOM.timerBar.style.width = '100%';
             
             updateAudioTrack();
+            // --> NEW: Restart BGM if it was stopped by Game Over
+            if (audioCtx && !state.audioMuted && !bgmOsc) {
+                startBmitter();
+            }
+            
             generateTarget();
             renderBoard();
             flashPattern();
@@ -563,6 +570,11 @@
                 
                 if(state.timeLeft <= 0) {
                     clearInterval(state.timerId);
+
+                    // --> NEW: Kill the BGM completely
+                    clearTimeout(bgmTimeout);
+                    if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; }
+                    
                     playSound('error');
                     showModal("Time Expired", "Your focus faded. The system collapsed.", "Retry Level", startLevel);
                 }
