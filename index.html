@@ -22,11 +22,15 @@
             
             --theme-color: var(--system-blue);
             --bg-gradient: radial-gradient(circle at 15% 50%, #1a1a2e, #0f0c29);
-            --blob-speed: 12s; /* Increased base speed */
+            --blob-speed: 12s; 
             --blob-opacity: 0.5;
+            
+            /* Parallax variables controlled by JS */
+            --tilt-x: 0px;
+            --tilt-y: 0px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
             background: var(--bg-gradient); color: var(--text-main);
@@ -34,23 +38,15 @@
             transition: background 1s ease;
         }
 
-        /* Fluid Background Blobs */
-        .bg-blob {
-            position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); z-index: -1;
-            animation: float var(--blob-speed) infinite alternate ease-in-out;
-            transition: opacity 0.5s ease, filter 0.5s ease;
-        }
+        /* Fluid Background Blobs with Tilt Parallax */
+        .parallax-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; transform: translate(var(--tilt-x), var(--tilt-y)); transition: transform 0.1s ease-out; }
+        .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); animation: float var(--blob-speed) infinite alternate ease-in-out; transition: opacity 0.5s ease, filter 0.5s ease; }
         .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
         .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -5s; }
 
         @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(8vw, 6vh) scale(1.1); } }
 
-        #app {
-            width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px;
-            display: grid; gap: 12px;
-            grid-template-rows: auto minmax(0, 1fr) auto;
-            grid-template-columns: 1fr;
-        }
+        #app { width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; }
         
         @media (min-width: 768px) {
             #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 340px; align-content: center; gap: 20px; padding: 25px;}
@@ -59,148 +55,90 @@
             #board-container { height: 100%; }
         }
 
-        .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 22px;
-            box-shadow: var(--glass-shadow); padding: 16px;
-        }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 22px; box-shadow: var(--glass-shadow); padding: 16px; }
 
         header { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 14px 20px; overflow: hidden;}
-        .branding h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-        .tier-name { font-size: 12px; color: var(--theme-color); font-weight: 500; }
+        .branding h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        .tier-name { font-size: 12px; color: var(--theme-color); font-weight: 600; }
         
         .header-right { display: flex; align-items: center; gap: 15px; }
         .score-box { text-align: right; }
-        .score-val { font-size: 22px; font-weight: 700; }
-        .score-label { font-size: 10px; color: var(--theme-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .score-val { font-size: 22px; font-weight: 800; }
+        .score-label { font-size: 10px; color: var(--theme-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
         
-        .util-btn {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border);
-            color: white; width: 36px; height: 36px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s;
-        }
-        .util-btn:active { transform: scale(0.9); }
+        .util-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .util-btn:active { transform: scale(0.85); }
 
-        .timer-container {
-            position: relative; /* Removes it from the bottom edge */
-            flex-grow: 1; /* Tells it to fill all empty space in the middle */
-            max-width: 200px; /* Stops it from getting too long on large screens */
-            margin: 0 15px; /* Adds breathing room on the sides */
-            height: 6px; /* Slightly thicker for the pill look */
-            background: rgba(255,255,255,0.08); 
-            border-radius: 10px; /* Fully rounded edges */
-            overflow: hidden;
-        }
-        
-        #timer-bar { 
-            height: 100%; 
-            background: var(--theme-color); 
-            width: 100%; 
-            transition: width 1s linear, background 0.3s; 
-            border-radius: 10px; /* Matches the container */
-        }
+        .timer-container { position: relative; flex-grow: 1; max-width: 200px; margin: 0 15px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
+        #timer-bar { height: 100%; background: var(--theme-color); width: 100%; transition: width 1s linear, background 0.3s; border-radius: 10px; }
 
-        #board-container { 
-            display: flex; align-items: center; justify-content: center; 
-            width: 100%; height: 100%; padding: 10px; 
-            /* overflow: hidden; /* Prevents the board from ever pushing into the header/footer */ */
-        }
+        #board-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 10px; perspective: 1000px; }
         
         #game-board {
-            display: grid; 
-            gap: 1.5%; /* Fluid gaps that shrink as the grid gets denser */
-            padding: 3%; 
-            border-radius: 24px;
-            background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border);
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.4); transition: all 0.4s ease;
-            
-            /* The Magic Formula: Always stay square, never overflow the screen */
-            width: 100%;
-            max-width: min(100vw - 60px, 55vh); 
-            aspect-ratio: 1 / 1; 
+            display: grid; gap: 1.5%; padding: 3%; border-radius: 24px;
+            background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+            width: 100%; max-width: min(100vw - 60px, 55vh); aspect-ratio: 1 / 1; 
+            transition: all 0.4s ease; transform-style: preserve-3d;
         }
         
         .cell {
-            /* We remove the fixed 13vw and let CSS Grid handle the sizing */
-            width: 100%; 
-            height: 100%; 
-            background: rgba(255,255,255,0.04); 
-            border-radius: 15%; /* Percentages keep the corners looking right on tiny cells */
-            border: 1px solid rgba(255,255,255,0.03); cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            display: flex; justify-content: center; align-items: center; position: relative;
+            width: 100%; height: 100%; background: rgba(255,255,255,0.04); border-radius: 15%; 
+            border: 1px solid rgba(255,255,255,0.03); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
+            /* Premium Spring Physics Transition */
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s, opacity 0.3s;
         }
-        .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); transform: scale(0.93); border-color: transparent; }
+        .cell:active { transform: scale(0.85); }
+        .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); transform: scale(0.95); border-color: transparent; }
         .cell.locked { background: var(--system-green); box-shadow: 0 0 14px var(--system-green); pointer-events: none; opacity: 0.85; }
         
+        /* Cascade Win Animation */
+        .cell.win-bloom { animation: bloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes bloom { 0% { transform: scale(0.95); box-shadow: 0 0 18px var(--theme-color); } 50% { transform: scale(1.1); background: #fff; box-shadow: 0 0 30px #fff; z-index: 10;} 100% { transform: scale(0); opacity: 0; } }
+
         .cell.error { border-color: var(--system-red); animation: shake 0.4s; }
-        .cell.error::after { 
-            content: '✕'; position: absolute; color: var(--system-red); 
-            /* Make the X scale down so it doesn't break out of tiny cells */
-            font-size: min(5vw, 24px); 
-            font-weight: bold; 
-        }
+        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
         .control-group { margin-bottom: 14px; }
-        .control-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 2px; }
+        .control-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 2px; font-weight: 600;}
         
         .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .tool {
-            height: 54px; border-radius: 14px; background: rgba(255,255,255,0.04);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s;
-        }
+        .tool { height: 54px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s; }
         .tool span { font-size: 20px; font-weight: 300; margin-bottom: 1px; }
-        .tool label { font-size: 9px; }
-        .tool.selected { background: rgba(255,255,255,0.12); color: var(--theme-color); border-color: var(--theme-color); }
+        .tool label { font-size: 9px; font-weight: 600; }
+        .tool.selected { background: rgba(255,255,255,0.12); color: var(--theme-color); border-color: var(--theme-color); transform: scale(1.05);}
 
         .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .btn {
-            padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,0.04);
-            color: var(--text-main); border: 1px solid var(--glass-border); font-size: 12px; font-weight: 500;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; cursor: pointer;
-        }
-        .btn:active { transform: scale(0.96); }
-        .btn-cost { font-size: 9px; color: var(--theme-color); font-weight: 700; background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 6px; }
+        .btn { padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,0.04); color: var(--text-main); border: 1px solid var(--glass-border); font-size: 12px; font-weight: 600; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .btn:active { transform: scale(0.92); }
+        .btn-cost { font-size: 9px; color: var(--theme-color); font-weight: 800; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 6px; }
         .btn-check { background: rgba(255,255,255,0.08); }
 
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; padding: 20px;
-        }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; z-index: 100; padding: 20px; }
         .modal.show { opacity: 1; pointer-events: all; }
-        .modal-content {
-            background: rgba(25, 25, 35, 0.85); border: 1px solid var(--glass-border);
-            padding: 24px; border-radius: 28px; text-align: center; max-width: 380px; width: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        }
-        .modal h2 { font-size: 24px; margin-bottom: 8px; font-weight: 700;}
-        .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
-        .btn-primary {
-            width: 100%; padding: 14px; background: var(--text-main); color: #000;
-            border-radius: 16px; font-size: 15px; font-weight: 600; border: none; cursor: pointer;
-        }
-        .watermark {
-        position: absolute;
-        bottom: 8px; /* Floats just above the bottom edge */
-        width: 100%;
-        text-align: center;
-        font-size: 10px;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.25); /* Subtle, slightly transparent */
-        pointer-events: none; /* CRITICAL: Prevents it from blocking taps */
-        z-index: 50;
-        letter-spacing: 0.5px;
-        }
+        .modal-content { background: rgba(20, 20, 30, 0.85); border: 1px solid var(--glass-border); padding: 28px; border-radius: 32px; text-align: center; max-width: 380px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,0.6); transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal.show .modal-content { transform: translateY(0); }
+        .modal h2 { font-size: 26px; margin-bottom: 10px; font-weight: 800; letter-spacing: -0.5px;}
+        .modal p { color: var(--text-muted); font-size: 15px; margin-bottom: 24px; line-height: 1.5; font-weight: 500;}
+        
+        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+        .btn-primary, .btn-secondary { width: 100%; padding: 16px; border-radius: 18px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: transform 0.2s; }
+        .btn-primary { background: var(--text-main); color: #000; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid var(--glass-border); display: none; align-items: center; justify-content: center; gap: 8px;}
+        .btn-primary:active, .btn-secondary:active { transform: scale(0.96); }
+
+        .watermark { position: absolute; bottom: 8px; width: 100%; text-align: center; font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 50; letter-spacing: 0.5px; }
+        
+        /* Hidden canvas for generating share image */
+        #share-canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="bg-blob blob-1"></div>
-    <div class="bg-blob blob-2"></div>
+    <div class="parallax-layer">
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+    </div>
 
     <div id="app">
         <header class="glass-panel">
@@ -241,22 +179,22 @@
             </div>
 
             <div class="control-group" style="margin-bottom: 0;">
-                <div class="control-title">Super Powers (Store)</div>
+                <div class="control-title">Super Powers</div>
                 <div class="action-row">
                     <button class="btn btn-check" id="btn-check">
-                        <div>✓ Verify Moves</div>
+                        <div>✓ Verify</div>
                         <div class="btn-cost" style="color:var(--text-main)">FREE</div>
                     </button>
                     <button class="btn" id="btn-hint">
-                        <div>💡 Auto-Solve 1</div>
+                        <div>💡 Auto-Solve</div>
                         <div class="btn-cost" id="cost-hint">50 IQ</div>
                     </button>
                     <button class="btn" id="btn-peek">
-                        <div>👁 Flash Pattern</div>
+                        <div>👁 Flash</div>
                         <div class="btn-cost" id="cost-peek">30 IQ</div>
                     </button>
                     <button class="btn" id="btn-skip">
-                        <div>⏭ Skip Level</div>
+                        <div>⏭ Skip</div>
                         <div class="btn-cost" id="cost-skip">200 IQ</div>
                     </button>
                 </div>
@@ -268,10 +206,19 @@
         <div class="modal-content">
             <h2 id="msg-title">Title</h2>
             <p id="msg-desc">Description</p>
-            <button class="btn-primary" id="btn-modal-action">Continue</button>
+            <div class="modal-actions">
+                <button class="btn-primary" id="btn-modal-action">Continue</button>
+                <button class="btn-secondary" id="btn-modal-share">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                    Share IQ
+                </button>
+            </div>
         </div>
     </div>
+    
+    <canvas id="share-canvas" width="1080" height="1080"></canvas>
     <div class="watermark">Made with ❤️ by Harsha Varthan E P</div>
+
     <script>
         // --- State Management ---
         let state = {
@@ -287,19 +234,14 @@
             timeLeft: 60,
             timerId: null,
             costs: { peek: 0, hint: 0, skip: 0 },
-            // audioMuted: false,
-            audioMuted: localStorage.getItem('kuro_muted') === 'true', // Reads from cache
+            audioMuted: localStorage.getItem('kuro_muted') === 'true', 
             themeIndex: 0
         };
 
         const themes = [
-            // Glass: Calming A Minor 9 vibe
             { name: "Glass", color: "#0A84FF", bg: "radial-gradient(circle at 15% 50%, #001233, #000000)", freqs: [220, 277.18, 329.63, 440] },
-            // Neon: Energetic G Major vibe
             { name: "Neon", color: "#30D158", bg: "radial-gradient(circle at 85% 20%, #00220e, #000000)", freqs: [196, 246.94, 293.66, 392] },
-            // Magma: Tense E Minor vibe
             { name: "Magma", color: "#FF453A", bg: "radial-gradient(circle at 50% 80%, #220000, #000000)", freqs: [164.81, 196, 220, 329.63] },
-            // Pro: Deep, mysterious C Minor vibe
             { name: "Pro", color: "#BF5AF2", bg: "radial-gradient(circle at 50% 50%, #140024, #000000)", freqs: [130.81, 155.56, 196, 261.63] }
         ];
 
@@ -313,17 +255,14 @@
             modalTitle: document.getElementById('msg-title'),
             modalDesc: document.getElementById('msg-desc'),
             modalBtn: document.getElementById('btn-modal-action'),
+            modalShareBtn: document.getElementById('btn-modal-share'),
             audioBtn: document.getElementById('btn-audio'),
             installBtn: document.getElementById('btn-install')
         };
 
-        // --- Premium Web Audio Engine ---
+        // --- Premium Web Audio & Haptics Engine ---
         let audioCtx = null;
-        let bgmOsc = null;
-        let bgmGain = null;
-        let bgmFilter = null;
-        let bgmTimeout = null;
-        let bgmStep = 0; // Tracks which note of the theme's chord to play
+        let bgmOsc = null, bgmGain = null, bgmFilter = null, bgmTimeout = null, bgmStep = 0;
 
         function initAudio() {
             if (audioCtx) return;
@@ -337,163 +276,103 @@
                 bgmOsc = audioCtx.createOscillator();
                 bgmGain = audioCtx.createGain();
                 bgmFilter = audioCtx.createBiquadFilter();
-                
-                // Use a soft sine wave instead of harsh triangle
                 bgmOsc.type = 'sine'; 
-                
-                // Muffle the sound to make it sound "ambient" and deep
                 bgmFilter.type = 'lowpass';
                 bgmFilter.frequency.value = 600; 
-
-                // Start silent to prevent popping
                 bgmGain.gain.setValueAtTime(0, audioCtx.currentTime); 
-                
-                bgmOsc.connect(bgmFilter);
-                bgmFilter.connect(bgmGain);
-                bgmGain.connect(audioCtx.destination);
-                
+                bgmOsc.connect(bgmFilter); bgmFilter.connect(bgmGain); bgmGain.connect(audioCtx.destination);
                 bgmOsc.start();
                 tickBGM();
-            } catch(e) { console.log(e); }
+            } catch(e) {}
         }
 
         function tickBGM() {
             if (!audioCtx || state.audioMuted || !bgmOsc) return;
             let now = audioCtx.currentTime;
             let pct = state.timeLeft / state.timeTotal;
-            
-            // Get the current theme's chord
             let currentChord = themes[state.themeIndex].freqs;
             let freq = currentChord[bgmStep % currentChord.length];
-            bgmStep++; // Move to the next note for the next tick
+            bgmStep++; 
             
-            let interval = 1200; // Slower, more relaxing default pace
-            if (pct <= 0.25) { interval = 350; bgmFilter.frequency.value = 1200; } // Panic: Faster, brighter sound
-            else if (pct <= 0.5) { interval = 600; bgmFilter.frequency.value = 800; } // Tension: Medium pace
-            else { bgmFilter.frequency.value = 400; } // Relaxed: Muffled and deep
+            let interval = 1200;
+            if (pct <= 0.25) { interval = 350; bgmFilter.frequency.value = 1200; } 
+            else if (pct <= 0.5) { interval = 600; bgmFilter.frequency.value = 800; } 
+            else { bgmFilter.frequency.value = 400; } 
             
-            // Smoothly glide to the new note
             bgmOsc.frequency.setTargetAtTime(freq, now, 0.1);
-            
-            // Premium ambient "pulse" envelope
             bgmGain.gain.cancelScheduledValues(now);
             bgmGain.gain.setValueAtTime(0.01, now);
-            bgmGain.gain.linearRampToValueAtTime(0.8, now + 0.1); // Swell up
-            bgmGain.gain.exponentialRampToValueAtTime(0.01, now + (interval/1000) * 0.8); // Fade out smoothly
-            
+            bgmGain.gain.linearRampToValueAtTime(0.8, now + 0.1);
+            bgmGain.gain.exponentialRampToValueAtTime(0.01, now + (interval/1000) * 0.8);
             bgmTimeout = setTimeout(tickBGM, interval);
         }
 
         function playSound(type) {
-
-            // ---> NEW: HAPTIC FEEDBACK <---
             if ('vibrate' in navigator) {
-                if (type === 'tap') navigator.vibrate(15); // Quick subtle tap
-                else if (type === 'error') navigator.vibrate([40, 40, 40]); // Harsh double-buzz
-                else if (type === 'win') navigator.vibrate([30, 40, 30, 40, 60]); // Happy triple-pulse
+                if (type === 'tap') navigator.vibrate(10);
+                else if (type === 'error') navigator.vibrate([40, 40, 40]);
+                else if (type === 'win') navigator.vibrate([20, 30, 20, 30, 50]);
             }
-            
             if (!audioCtx || state.audioMuted) return;
             let now = audioCtx.currentTime;
-
-            // Helper to generate a quick, shaped sound
-            const createSynth = (waveType, startFreq, volume) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = waveType;
-                osc.frequency.setValueAtTime(startFreq, now);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                return { osc, gain };
+            const createSynth = (waveType, startFreq) => {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = waveType; osc.frequency.setValueAtTime(startFreq, now);
+                osc.connect(gain); gain.connect(audioCtx.destination); return { osc, gain };
             };
 
             if (type === 'tap') {
-                // Glassy, modern "tick" (High frequency sine wave, extremely short fade)
-                let synth = createSynth('sine', 1200, 0);
-                synth.gain.gain.setValueAtTime(0.8, now);
+                let synth = createSynth('sine', 1200);
+                synth.gain.gain.setValueAtTime(0.6, now);
                 synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
                 synth.osc.start(now); synth.osc.stop(now + 0.05);
-                
             } else if (type === 'error') {
-                // Soft, muffled "thud"
-                let synth = createSynth('triangle', 200, 0);
-                synth.gain.gain.setValueAtTime(2.5, now);
+                let synth = createSynth('triangle', 200);
+                synth.gain.gain.setValueAtTime(2.0, now);
                 synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                synth.osc.frequency.exponentialRampToValueAtTime(50, now + 0.2); // Pitch drops slightly
+                synth.osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
                 synth.osc.start(now); synth.osc.stop(now + 0.2);
-                
             } else if (type === 'win') {
-                // Premium ascending "chime" (Plays a quick major chord)
-                const chimeNotes = [523.25, 659.25, 783.99, 1046.50]; // C Major arpeggio
+                const chimeNotes = [523.25, 659.25, 783.99, 1046.50];
                 chimeNotes.forEach((freq, i) => {
-                    let synth = createSynth('sine', freq, 0);
-                    let startTime = now + (i * 0.06); // Stagger the notes
+                    let synth = createSynth('sine', freq);
+                    let startTime = now + (i * 0.08);
                     synth.gain.gain.setValueAtTime(0, now);
-                    synth.gain.gain.setValueAtTime(0.5, startTime);
-                    synth.gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-                    synth.osc.start(startTime); synth.osc.stop(startTime + 0.5);
+                    synth.gain.gain.setValueAtTime(0.4, startTime);
+                    synth.gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
+                    synth.osc.start(startTime); synth.osc.stop(startTime + 0.6);
                 });
             }
         }
-
         
-        // Add sound to all buttons
-        document.querySelectorAll('.btn, .tool, .util-btn, .btn-primary').forEach(el => {
+        document.querySelectorAll('.btn, .tool, .util-btn, .btn-primary, .btn-secondary').forEach(el => {
             el.addEventListener('pointerdown', () => { initAudio(); playSound('tap'); });
         });
         document.body.addEventListener('pointerdown', initAudio, { once: true });
         
-        function updateAudioTrack() {
-            // Instantly sync the BGM to the new theme's starting note when a level changes
-            if (bgmOsc && audioCtx && !state.audioMuted) {
-                bgmStep = 0; 
-            }
-        }
-
+        function updateAudioTrack() { if (bgmOsc && audioCtx && !state.audioMuted) bgmStep = 0; }
 
         DOM.audioBtn.addEventListener('click', () => {
-            initAudio();
-            state.audioMuted = !state.audioMuted;
-            // --> NEW: Save preference to cache
+            initAudio(); state.audioMuted = !state.audioMuted;
             localStorage.setItem('kuro_muted', state.audioMuted);
-            
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
-            if (state.audioMuted) {
-                clearTimeout(bgmTimeout);
-                if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; }
-            } else {
-                startBmitter();
-            }
+            if (state.audioMuted) { clearTimeout(bgmTimeout); if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; } } 
+            else { startBmitter(); }
         });
 
-        // --- Native PWA Install Handler ---
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            DOM.installBtn.style.display = 'flex';
-        });
-
-        DOM.installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                deferredPrompt = null;
-                DOM.installBtn.style.display = 'none';
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
-            DOM.installBtn.style.display = 'none';
+        // --- Gyroscope Parallax ---
+        window.addEventListener('deviceorientation', (e) => {
+            if (!e.gamma || !e.beta) return;
+            const x = Math.min(Math.max(e.gamma, -40), 40) / 40; 
+            const y = Math.min(Math.max(e.beta, -40), 40) / 40;
+            document.documentElement.style.setProperty('--tilt-x', `${x * 15}px`);
+            document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
         });
 
         // --- Core Application Initialization ---
         function initGame() {
             updateScoreUI();
-            // --> NEW: Sync volume icon on load
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
             startLevel();
@@ -503,7 +382,6 @@
             state.costs.peek = Math.floor(20 + (state.level * 10));
             state.costs.hint = Math.floor(40 + (state.level * 15));
             state.costs.skip = Math.floor(150 + (state.level * 50));
-            
             document.getElementById('cost-peek').innerText = state.costs.peek + ' IQ';
             document.getElementById('cost-hint').innerText = state.costs.hint + ' IQ';
             document.getElementById('cost-skip').innerText = state.costs.skip + ' IQ';
@@ -516,7 +394,7 @@
             
             document.documentElement.style.setProperty('--theme-color', themes[state.themeIndex].color);
             document.documentElement.style.setProperty('--bg-gradient', themes[state.themeIndex].bg);
-            document.documentElement.style.setProperty('--blob-speed', '12s'); // Reset speed
+            document.documentElement.style.setProperty('--blob-speed', '12s'); 
             document.documentElement.style.setProperty('--blob-opacity', '0.5');
             
             DOM.tierDisplay.innerText = `${themes[state.themeIndex].name} OS • Lv ${state.level}`;
@@ -529,10 +407,7 @@
             DOM.timerBar.style.width = '100%';
             
             updateAudioTrack();
-            // --> NEW: Restart BGM if it was stopped by Game Over
-            if (audioCtx && !state.audioMuted && !bgmOsc) {
-                startBmitter();
-            }
+            if (audioCtx && !state.audioMuted && !bgmOsc) startBmitter();
             
             generateTarget();
             renderBoard();
@@ -544,7 +419,6 @@
             state.target = Array(totalCells).fill(false);
             state.current = Array(totalCells).fill(false);
             state.locked = Array(totalCells).fill(false);
-            
             const flips = state.level * 2; 
             for(let i=0; i<flips; i++) {
                 let rIndex = Math.floor(Math.random() * totalCells);
@@ -568,13 +442,11 @@
         function flashPattern() {
             state.isMemorizing = true;
             clearInterval(state.timerId);
-            
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
                 if(state.target[i]) cell.classList.add('active');
                 else cell.classList.remove('active');
             });
-            
             setTimeout(() => {
                 state.isMemorizing = false;
                 updateBoardVisuals();
@@ -588,22 +460,17 @@
                 state.timeLeft--;
                 const pct = (state.timeLeft / state.timeTotal) * 100;
                 DOM.timerBar.style.width = `${pct}%`;
-                
                 if(pct <= 25) {
                     DOM.timerBar.style.background = 'var(--system-red)';
-                    document.documentElement.style.setProperty('--blob-speed', '3s'); // Panic motion
+                    document.documentElement.style.setProperty('--blob-speed', '3s'); 
                     document.documentElement.style.setProperty('--blob-opacity', '0.8');
                 }
-                
                 if(state.timeLeft <= 0) {
                     clearInterval(state.timerId);
-
-                    // --> NEW: Kill the BGM completely
                     clearTimeout(bgmTimeout);
                     if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; }
-                    
                     playSound('error');
-                    showModal("Time Expired", "Your focus faded. The system collapsed.", "Retry Level", startLevel);
+                    showModal("System Collapse", "Your focus faded before the solution was found.", "Retry Reboot", startLevel, false);
                 }
             }, 1000);
         }
@@ -612,23 +479,17 @@
             if(state.isMemorizing) return;
             initAudio(); playSound('tap');
             document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
-
             const row = Math.floor(index / state.gridSize);
             const col = index % state.gridSize;
-
             const toggle = (r, c) => {
                 if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
                     let idx = r * state.gridSize + c;
-                    if(!state.locked[idx]) {
-                        state.current[idx] = !state.current[idx];
-                    }
+                    if(!state.locked[idx]) state.current[idx] = !state.current[idx];
                 }
             }
-
             if (state.activeTool === 'dot') { toggle(row, col); }
             if (state.activeTool === 'plus') { toggle(row, col); toggle(row-1, col); toggle(row+1, col); toggle(row, col-1); toggle(row, col+1); }
             if (state.activeTool === 'cross') { toggle(row, col); toggle(row-1, col-1); toggle(row-1, col+1); toggle(row+1, col-1); toggle(row+1, col+1); }
-
             updateBoardVisuals();
             checkWin();
         }
@@ -649,22 +510,14 @@
             const cells = document.querySelectorAll('.cell');
             let foundError = false;
             for(let i=0; i<state.current.length; i++) {
-                if(state.current[i] === true && state.target[i] === false) {
-                    cells[i].classList.add('error');
-                    foundError = true;
-                }
+                if(state.current[i] === true && state.target[i] === false) { cells[i].classList.add('error'); foundError = true; }
             }
-            if(foundError) {
-                playSound('error');
-            } else {
-                // Success Flash Fix
+            if(foundError) { playSound('error'); } 
+            else {
                 playSound('win');
                 DOM.board.style.borderColor = 'var(--system-green)';
                 DOM.board.style.boxShadow = 'inset 0 0 30px rgba(48, 209, 88, 0.4)';
-                setTimeout(() => {
-                    DOM.board.style.borderColor = 'var(--glass-border)';
-                    DOM.board.style.boxShadow = 'inset 0 0 20px rgba(0,0,0,0.4)';
-                }, 600);
+                setTimeout(() => { DOM.board.style.borderColor = 'var(--glass-border)'; DOM.board.style.boxShadow = 'inset 0 0 20px rgba(0,0,0,0.4)'; }, 600);
             }
         });
 
@@ -678,38 +531,26 @@
         document.getElementById('btn-hint').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.hint)) return;
             let diffIndices = [];
-            for(let i=0; i<state.target.length; i++) {
-                if(!state.locked[i] && state.current[i] !== state.target[i]) {
-                    diffIndices.push(i);
-                }
-            }
+            for(let i=0; i<state.target.length; i++) { if(!state.locked[i] && state.current[i] !== state.target[i]) diffIndices.push(i); }
             if(diffIndices.length > 0) {
                 let fixIndex = diffIndices[Math.floor(Math.random() * diffIndices.length)];
-                state.current[fixIndex] = state.target[fixIndex];
-                state.locked[fixIndex] = true;
-                updateBoardVisuals();
-                checkWin();
+                state.current[fixIndex] = state.target[fixIndex]; state.locked[fixIndex] = true;
+                updateBoardVisuals(); checkWin();
             }
         });
 
         document.getElementById('btn-skip').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.skip)) return;
             state.current = [...state.target];
-            updateBoardVisuals();
-            checkWin();
+            updateBoardVisuals(); checkWin();
         });
 
         function deductIQ(amount) {
-            if(state.score >= amount) {
-                state.score -= amount;
-                updateScoreUI();
-                return true;
-            } else {
-                playSound('error');
-                return false;
-            }
+            if(state.score >= amount) { state.score -= amount; updateScoreUI(); return true; } 
+            else { playSound('error'); return false; }
         }
 
+        // --- Win Logic & Cascade Animation ---
         function checkWin() {
             if(state.current.every((val, index) => val === state.target[index])) {
                 state.isMemorizing = true;
@@ -718,49 +559,90 @@
                 
                 const baseScore = 100 + (state.level * 20);
                 const timeBonus = state.timeLeft * 5;
-                const earned = baseScore + timeBonus;
-                
-                state.score += earned;
+                state.score += (baseScore + timeBonus);
                 localStorage.setItem('kuro_score', state.score);
                 updateScoreUI();
 
+                // Trigger Cascade Bloom Animation
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach((cell, i) => {
+                    setTimeout(() => { cell.classList.add('win-bloom'); }, i * 20);
+                });
+
                 setTimeout(() => {
                     showModal(
-                        `Level ${state.level} Complete`, 
-                        `Base IQ: +${baseScore}<br>Time Bonus: +${timeBonus}<br>Total Logic IQ: ${state.score}`, 
-                        "Next Level ➔", 
-                        () => {
-                            state.level++;
-                            localStorage.setItem('kuro_level', state.level);
-                            startLevel();
-                        }
+                        `Level ${state.level} Cleared`, 
+                        `Base IQ: +${baseScore}<br>Time Bonus: +${timeBonus}<br><b>Total Logic IQ: ${state.score}</b>`, 
+                        "Initialize Next Phase ➔", 
+                        () => { state.level++; localStorage.setItem('kuro_level', state.level); startLevel(); },
+                        true // Show Share Button
                     );
-                }, 600);
+                }, (cells.length * 20) + 600); // Wait for bloom to finish
             }
         }
 
-        function updateScoreUI() {
-            DOM.scoreDisplay.innerText = state.score;
-        }
+        function updateScoreUI() { DOM.scoreDisplay.innerText = state.score; }
 
         DOM.tools.forEach(tool => {
             tool.addEventListener('click', () => {
                 DOM.tools.forEach(t => t.classList.remove('selected'));
-                tool.classList.add('selected');
-                state.activeTool = tool.dataset.type;
+                tool.classList.add('selected'); state.activeTool = tool.dataset.type;
             });
         });
 
-        function showModal(title, desc, btnText, action) {
+        // --- Premium Modal & Share API ---
+        function showModal(title, desc, btnText, action, showShare = false) {
             DOM.modalTitle.innerHTML = title;
             DOM.modalDesc.innerHTML = desc;
             DOM.modalBtn.innerText = btnText;
+            DOM.modalShareBtn.style.display = (showShare && navigator.share) ? 'flex' : 'none';
             DOM.modal.classList.add('show');
-            DOM.modalBtn.onclick = () => {
-                DOM.modal.classList.remove('show');
-                action();
-            };
+            DOM.modalBtn.onclick = () => { DOM.modal.classList.remove('show'); action(); };
         }
+
+        // Viral Share Card Generator
+        DOM.modalShareBtn.addEventListener('click', async () => {
+            const canvas = document.getElementById('share-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Draw sleek dark background
+            const grad = ctx.createRadialGradient(540, 540, 100, 540, 540, 800);
+            grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1080, 1080);
+            
+            // Draw Text
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 120px -apple-system, sans-serif';
+            ctx.fillText('KURO LOGIC', 540, 300);
+            
+            ctx.fillStyle = themes[state.themeIndex].color;
+            ctx.font = 'bold 60px -apple-system, sans-serif';
+            ctx.fillText(`${themes[state.themeIndex].name} OS Level ${state.level}`, 540, 400);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 200px -apple-system, sans-serif';
+            ctx.fillText(state.score, 540, 700);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '40px -apple-system, sans-serif';
+            ctx.fillText('CERTIFIED LOGIC IQ', 540, 800);
+            
+            // Convert to file and share
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'kuro-logic-iq.png', { type: 'image/png' });
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'My Kuro Logic IQ',
+                            text: `I just reached Level ${state.level} with a Logic IQ of ${state.score} in Kuro Logic!`,
+                            files: [file]
+                        });
+                    } catch (err) { console.log("Share cancelled", err); }
+                }
+            });
+        });
 
         document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
         initGame();
