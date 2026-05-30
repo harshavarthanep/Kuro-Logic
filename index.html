@@ -372,8 +372,6 @@
         }
 
         function playSound(type) {
-            if (!audioCtx || state.audioMuted) return;
-            let now = audioCtx.currentTime;
 
             // ---> NEW: HAPTIC FEEDBACK <---
             if ('vibrate' in navigator) {
@@ -381,6 +379,9 @@
                 else if (type === 'error') navigator.vibrate([40, 40, 40]); // Harsh double-buzz
                 else if (type === 'win') navigator.vibrate([30, 40, 30, 40, 60]); // Happy triple-pulse
             }
+            
+            if (!audioCtx || state.audioMuted) return;
+            let now = audioCtx.currentTime;
 
             // Helper to generate a quick, shaped sound
             const createSynth = (waveType, startFreq, volume) => {
