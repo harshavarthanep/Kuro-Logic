@@ -11,8 +11,7 @@ self.addEventListener('install', (event) => {
         'index.html',
         'manifest.json',
         'icon-192.png',
-        'icon-512.png',
-        'favicon.ico'
+        'icon-512.png'
       ]).catch(err => console.log("Cache error bypassed:", err)); 
       // ^ This catch prevents the SW from crashing if a file path is weird
     })
