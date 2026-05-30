@@ -25,12 +25,12 @@
             --blob-speed: 12s; 
             --blob-opacity: 0.5;
             
-            /* Parallax variables controlled by JS */
+            /* Parallax variables */
             --tilt-x: 0px;
             --tilt-y: 0px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         body {
             background: var(--bg-gradient); color: var(--text-main);
@@ -38,7 +38,7 @@
             transition: background 1s ease;
         }
 
-        /* Fluid Background Blobs with Tilt Parallax */
+        /* Fluid Background Blobs with Parallax */
         .parallax-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; transform: translate(var(--tilt-x), var(--tilt-y)); transition: transform 0.1s ease-out; }
         .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); animation: float var(--blob-speed) infinite alternate ease-in-out; transition: opacity 0.5s ease, filter 0.5s ease; }
         .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
@@ -179,22 +179,22 @@
             </div>
 
             <div class="control-group" style="margin-bottom: 0;">
-                <div class="control-title">Super Powers</div>
+                <div class="control-title">Super Powers (Store)</div>
                 <div class="action-row">
                     <button class="btn btn-check" id="btn-check">
-                        <div>✓ Verify</div>
+                        <div>✓ Verify Moves</div>
                         <div class="btn-cost" style="color:var(--text-main)">FREE</div>
                     </button>
                     <button class="btn" id="btn-hint">
-                        <div>💡 Auto-Solve</div>
+                        <div>💡 Auto-Solve 1</div>
                         <div class="btn-cost" id="cost-hint">50 IQ</div>
                     </button>
                     <button class="btn" id="btn-peek">
-                        <div>👁 Flash</div>
+                        <div>👁 Flash Pattern</div>
                         <div class="btn-cost" id="cost-peek">30 IQ</div>
                     </button>
                     <button class="btn" id="btn-skip">
-                        <div>⏭ Skip</div>
+                        <div>⏭ Skip Level</div>
                         <div class="btn-cost" id="cost-skip">200 IQ</div>
                     </button>
                 </div>
@@ -260,7 +260,18 @@
             installBtn: document.getElementById('btn-install')
         };
 
-        // --- Premium Web Audio & Haptics Engine ---
+        // --- Haptics Engine ---
+        function triggerHaptic(type) {
+            if (!('vibrate' in navigator)) return;
+            try {
+                if (type === 'light') navigator.vibrate(10); // UI taps, tool changes
+                else if (type === 'medium') navigator.vibrate(15); // Cell taps
+                else if (type === 'heavy') navigator.vibrate([40, 40, 40]); // Errors
+                else if (type === 'success') navigator.vibrate([20, 30, 20, 30, 50]); // Level Clear
+            } catch(e) {}
+        }
+
+        // --- Premium Web Audio Engine ---
         let audioCtx = null;
         let bgmOsc = null, bgmGain = null, bgmFilter = null, bgmTimeout = null, bgmStep = 0;
 
@@ -308,11 +319,11 @@
         }
 
         function playSound(type) {
-            if ('vibrate' in navigator) {
-                if (type === 'tap') navigator.vibrate(10);
-                else if (type === 'error') navigator.vibrate([40, 40, 40]);
-                else if (type === 'win') navigator.vibrate([20, 30, 20, 30, 50]);
-            }
+            // Trigger specific haptics based on audio event
+            if (type === 'tap') triggerHaptic('medium');
+            else if (type === 'error') triggerHaptic('heavy');
+            else if (type === 'win') triggerHaptic('success');
+
             if (!audioCtx || state.audioMuted) return;
             let now = audioCtx.currentTime;
             const createSynth = (waveType, startFreq) => {
@@ -323,12 +334,12 @@
 
             if (type === 'tap') {
                 let synth = createSynth('sine', 1200);
-                synth.gain.gain.setValueAtTime(0.6, now);
+                synth.gain.gain.setValueAtTime(0.8, now);
                 synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
                 synth.osc.start(now); synth.osc.stop(now + 0.05);
             } else if (type === 'error') {
                 let synth = createSynth('triangle', 200);
-                synth.gain.gain.setValueAtTime(2.0, now);
+                synth.gain.gain.setValueAtTime(2.5, now);
                 synth.gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 synth.osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
                 synth.osc.start(now); synth.osc.stop(now + 0.2);
@@ -336,24 +347,27 @@
                 const chimeNotes = [523.25, 659.25, 783.99, 1046.50];
                 chimeNotes.forEach((freq, i) => {
                     let synth = createSynth('sine', freq);
-                    let startTime = now + (i * 0.08);
+                    let startTime = now + (i * 0.06);
                     synth.gain.gain.setValueAtTime(0, now);
-                    synth.gain.gain.setValueAtTime(0.4, startTime);
-                    synth.gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
-                    synth.osc.start(startTime); synth.osc.stop(startTime + 0.6);
+                    synth.gain.gain.setValueAtTime(0.5, startTime);
+                    synth.gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                    synth.osc.start(startTime); synth.osc.stop(startTime + 0.5);
                 });
             }
         }
         
-        document.querySelectorAll('.btn, .tool, .util-btn, .btn-primary, .btn-secondary').forEach(el => {
-            el.addEventListener('pointerdown', () => { initAudio(); playSound('tap'); });
+        // Haptics & Audio on UI elements
+        document.querySelectorAll('.btn, .util-btn, .btn-primary, .btn-secondary').forEach(el => {
+            el.addEventListener('pointerdown', () => { initAudio(); triggerHaptic('light'); playSound('tap'); });
         });
         document.body.addEventListener('pointerdown', initAudio, { once: true });
         
         function updateAudioTrack() { if (bgmOsc && audioCtx && !state.audioMuted) bgmStep = 0; }
 
         DOM.audioBtn.addEventListener('click', () => {
-            initAudio(); state.audioMuted = !state.audioMuted;
+            initAudio(); 
+            triggerHaptic('light');
+            state.audioMuted = !state.audioMuted;
             localStorage.setItem('kuro_muted', state.audioMuted);
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
@@ -361,13 +375,48 @@
             else { startBmitter(); }
         });
 
-        // --- Gyroscope Parallax ---
+        // --- Parallax ---
         window.addEventListener('deviceorientation', (e) => {
             if (!e.gamma || !e.beta) return;
             const x = Math.min(Math.max(e.gamma, -40), 40) / 40; 
             const y = Math.min(Math.max(e.beta, -40), 40) / 40;
             document.documentElement.style.setProperty('--tilt-x', `${x * 15}px`);
             document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
+        });
+
+        // --- PWA Install Handler (Bulletproofed) ---
+        let deferredPrompt;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        
+        if (!isStandalone) {
+            // Always show the button if not installed to handle iOS gracefully
+            DOM.installBtn.style.display = 'flex';
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            DOM.installBtn.style.display = 'flex';
+        });
+
+        DOM.installBtn.addEventListener('click', async () => {
+            triggerHaptic('medium');
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                    DOM.installBtn.style.display = 'none';
+                }
+            } else {
+                // iOS Fallback / Instruction
+                showModal("Install Kuro Logic", "To install on iOS, tap the Share icon at the bottom of your browser and select 'Add to Home Screen'.", "Got it", () => {}, false);
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            DOM.installBtn.style.display = 'none';
         });
 
         // --- Core Application Initialization ---
@@ -477,10 +526,12 @@
 
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
-            initAudio(); playSound('tap');
+            initAudio(); playSound('tap'); // tap handles haptics inside playSound
             document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+            
             const row = Math.floor(index / state.gridSize);
             const col = index % state.gridSize;
+            
             const toggle = (r, c) => {
                 if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
                     let idx = r * state.gridSize + c;
@@ -490,6 +541,7 @@
             if (state.activeTool === 'dot') { toggle(row, col); }
             if (state.activeTool === 'plus') { toggle(row, col); toggle(row-1, col); toggle(row+1, col); toggle(row, col-1); toggle(row, col+1); }
             if (state.activeTool === 'cross') { toggle(row, col); toggle(row-1, col-1); toggle(row-1, col+1); toggle(row+1, col-1); toggle(row+1, col+1); }
+            
             updateBoardVisuals();
             checkWin();
         }
@@ -584,7 +636,8 @@
         function updateScoreUI() { DOM.scoreDisplay.innerText = state.score; }
 
         DOM.tools.forEach(tool => {
-            tool.addEventListener('click', () => {
+            tool.addEventListener('pointerdown', () => {
+                triggerHaptic('light'); // Specific haptic for tool switch
                 DOM.tools.forEach(t => t.classList.remove('selected'));
                 tool.classList.add('selected'); state.activeTool = tool.dataset.type;
             });
@@ -595,13 +648,14 @@
             DOM.modalTitle.innerHTML = title;
             DOM.modalDesc.innerHTML = desc;
             DOM.modalBtn.innerText = btnText;
-            DOM.modalShareBtn.style.display = (showShare && navigator.share) ? 'flex' : 'none';
+            DOM.modalShareBtn.style.display = showShare ? 'flex' : 'none'; // Always show in modal if it's a win
             DOM.modal.classList.add('show');
             DOM.modalBtn.onclick = () => { DOM.modal.classList.remove('show'); action(); };
         }
 
-        // Viral Share Card Generator
+        // Viral Share Card Generator with Game Link included
         DOM.modalShareBtn.addEventListener('click', async () => {
+            triggerHaptic('medium');
             const canvas = document.getElementById('share-canvas');
             const ctx = canvas.getContext('2d');
             
@@ -615,31 +669,47 @@
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.font = 'bold 120px -apple-system, sans-serif';
-            ctx.fillText('KURO LOGIC', 540, 300);
+            ctx.fillText('KURO LOGIC', 540, 260);
             
             ctx.fillStyle = themes[state.themeIndex].color;
             ctx.font = 'bold 60px -apple-system, sans-serif';
-            ctx.fillText(`${themes[state.themeIndex].name} OS Level ${state.level}`, 540, 400);
+            ctx.fillText(`${themes[state.themeIndex].name} OS Level ${state.level}`, 540, 360);
             
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 200px -apple-system, sans-serif';
-            ctx.fillText(state.score, 540, 700);
+            ctx.font = 'bold 220px -apple-system, sans-serif';
+            ctx.fillText(state.score, 540, 680);
             
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
             ctx.font = '40px -apple-system, sans-serif';
-            ctx.fillText('CERTIFIED LOGIC IQ', 540, 800);
+            ctx.fillText('CERTIFIED LOGIC IQ', 540, 780);
+
+            // Draw the Game URL so others can play
+            ctx.fillStyle = themes[state.themeIndex].color;
+            ctx.font = 'bold 36px -apple-system, sans-serif';
+            ctx.fillText('Play at: harshavarthanep.github.io/Kuro-Logic', 540, 1000);
             
             // Convert to file and share
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'kuro-logic-iq.png', { type: 'image/png' });
+                
                 if (navigator.share) {
                     try {
                         await navigator.share({
                             title: 'My Kuro Logic IQ',
-                            text: `I just reached Level ${state.level} with a Logic IQ of ${state.score} in Kuro Logic!`,
+                            text: `I just reached Level ${state.level} with a Logic IQ of ${state.score} in Kuro Logic! Play here: https://harshavarthanep.github.io/Kuro-Logic`,
                             files: [file]
                         });
                     } catch (err) { console.log("Share cancelled", err); }
+                } else {
+                    // Fallback for desktop/unsupported browsers: Download the image
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Kuro-Logic-IQ.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                 }
             });
         });
