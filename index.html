@@ -275,7 +275,8 @@
             timeLeft: 60,
             timerId: null,
             costs: { peek: 0, hint: 0, skip: 0 },
-            audioMuted: false,
+            // audioMuted: false,
+            audioMuted: localStorage.getItem('kuro_muted') === 'true', // Reads from cache
             themeIndex: 0
         };
 
@@ -441,6 +442,9 @@
         DOM.audioBtn.addEventListener('click', () => {
             initAudio();
             state.audioMuted = !state.audioMuted;
+            // --> NEW: Save preference to cache
+            localStorage.setItem('kuro_muted', state.audioMuted);
+            
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
             if (state.audioMuted) {
@@ -477,6 +481,9 @@
         // --- Core Application Initialization ---
         function initGame() {
             updateScoreUI();
+            // --> NEW: Sync volume icon on load
+            document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
+            document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
             startLevel();
         }
 
