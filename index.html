@@ -38,7 +38,7 @@
             transition: background 1s ease;
         }
 
-        /* Fluid Background Blobs with Parallax - OPTIMIZED */
+        /* Fluid Background Blobs with Parallax - OPTIMIZED FOR MOBILE */
         .parallax-layer { 
             position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; 
             transform: translate(var(--tilt-x), var(--tilt-y)); 
@@ -46,16 +46,19 @@
             will-change: transform; 
         }
         .bg-blob { 
-            position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); 
+            position: absolute; border-radius: 50%; filter: blur(60px); opacity: var(--blob-opacity); 
             animation: float var(--blob-speed) infinite alternate ease-in-out; 
             transition: opacity 0.5s ease, filter 0.5s ease;
             will-change: transform, opacity;
             transform: translate3d(0, 0, 0); 
         }
-        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
-        .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -5s; }
+        .blob-1 { top: 5%; left: 0%; width: 75vmin; height: 75vmin; background: var(--theme-color); }
+        .blob-2 { bottom: 5%; right: 0%; width: 85vmin; height: 85vmin; background: #4a00e0; animation-delay: -5s; }
 
-        @keyframes float { 0% { transform: translate3d(0, 0, 0) scale(1); } 100% { transform: translate3d(8vw, 6vh, 0) scale(1.1); } }
+        @keyframes float { 
+            0% { transform: translate3d(0, 0, 0) scale(1); } 
+            100% { transform: translate3d(15vmin, 15vmin, 0) scale(1.15); } 
+        }
 
         /* App Layout with Boot Animation */
         #app { 
@@ -535,7 +538,11 @@
             
             generateTarget();
             renderBoard();
-            flashPattern();
+
+            // WAIT for grid to animate in before showing pattern
+            setTimeout(() => {
+                flashPattern();
+            }, 800);
         }
 
         function generateTarget() {
@@ -577,11 +584,13 @@
                 if(state.target[i]) cell.classList.add('active');
                 else cell.classList.remove('active');
             });
+
+            // Increased display duration so user can see it properly
             setTimeout(() => {
                 state.isMemorizing = false;
                 updateBoardVisuals();
                 startTimer();
-            }, Math.max(1000, 3000 - (state.level * 100)));
+            }, Math.max(2000, 4000 - (state.level * 100))); 
         }
 
         function startTimer() {
@@ -667,8 +676,12 @@
             void DOM.board.offsetWidth;
             DOM.board.classList.add('board-animate');
             
-            flashPattern();
-            setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
+            // Wait for entrance before flashing
+            setTimeout(() => {
+                flashPattern();
+                // Override the flashPattern reset for peek specifically
+                setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
+            }, 800);
         });
 
         document.getElementById('btn-hint').addEventListener('click', () => {
