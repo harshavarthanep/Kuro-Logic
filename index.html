@@ -50,7 +50,7 @@
             animation: float var(--blob-speed) infinite alternate ease-in-out; 
             transition: opacity 0.5s ease, filter 0.5s ease;
             will-change: transform, opacity;
-            transform: translate3d(0, 0, 0); /* Force Hardware Acceleration */
+            transform: translate3d(0, 0, 0); 
         }
         .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
         .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -5s; }
@@ -61,7 +61,7 @@
         #app { 
             width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; 
             display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; 
-            opacity: 0; /* Hidden initially for Boot Screen */
+            opacity: 0; 
             transform: scale(0.95);
             transition: opacity 1s cubic-bezier(0.34, 1.56, 0.64, 1), transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
             pointer-events: none;
@@ -98,17 +98,34 @@
 
         #board-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 10px; perspective: 1000px; }
         
+        /* Premium Entrance Animations */
+        @keyframes boardPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .board-animate {
+            animation: boardPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes cellPop {
+            0% { transform: scale(0.2); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .cell-entrance {
+            animation: cellPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
         #game-board {
             display: grid; gap: 1.5%; padding: 3%; border-radius: 24px;
             background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
             width: 100%; max-width: min(100vw - 60px, 55vh); aspect-ratio: 1 / 1; 
-            transition: all 0.4s ease; transform-style: preserve-3d;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease; transform-style: preserve-3d;
         }
         
         .cell {
             width: 100%; height: 100%; background: rgba(255,255,255,0.04); border-radius: 15%; 
             border: 1px solid rgba(255,255,255,0.03); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
-            /* Premium Spring Physics Transition */
+            /* Premium Spring Physics Transition for interactions */
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s, opacity 0.3s;
         }
         .cell:active { transform: scale(0.85); }
@@ -413,8 +430,7 @@
             }
         });
 
-        // --- Performance & Visibility Management ---
-        // Suspends Audio Engine when app is closed/minimized to stop mobile lag
+        // --- Performance & Visibility Management (with Resume Animation) ---
         document.addEventListener("visibilitychange", () => {
             if (document.hidden) {
                 if (audioCtx && audioCtx.state === 'running') {
@@ -424,6 +440,17 @@
                 if (audioCtx && audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
+                
+                // Re-trigger premium entrance animations on resume
+                DOM.board.classList.remove('board-animate');
+                void DOM.board.offsetWidth; // Force Reflow
+                DOM.board.classList.add('board-animate');
+                
+                document.querySelectorAll('.cell').forEach((cell) => {
+                    cell.classList.remove('cell-entrance');
+                    void cell.offsetWidth;
+                    cell.classList.add('cell-entrance');
+                });
             }
         });
 
@@ -457,15 +484,14 @@
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
             
-            // Re-using the modal system to act as a Boot/Start Screen
             showModal(
                 "KURO LOGIC", 
                 "System standby. Are you ready to initialize the logic grid?", 
                 "Boot System ➔", 
                 () => {
-                    DOM.app.classList.add('booted'); // Triggers CSS transition to show layout
-                    initAudio(); // Required to bypass browser autoplay rules gracefully
-                    setTimeout(() => { startLevel(); }, 400); // Give layout time to fade in
+                    DOM.app.classList.add('booted'); 
+                    initAudio(); 
+                    setTimeout(() => { startLevel(); }, 400); 
                 },
                 false
             );
@@ -502,6 +528,11 @@
             updateAudioTrack();
             if (audioCtx && !state.audioMuted && !bgmOsc) startBmitter();
             
+            // Trigger board pop animation
+            DOM.board.classList.remove('board-animate');
+            void DOM.board.offsetWidth; 
+            DOM.board.classList.add('board-animate');
+            
             generateTarget();
             renderBoard();
             flashPattern();
@@ -524,7 +555,13 @@
             DOM.board.innerHTML = '';
             for(let i = 0; i < state.gridSize * state.gridSize; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'cell';
+                cell.className = 'cell cell-entrance';
+                
+                // Diagonal wave stagger delay for premium entry
+                const row = Math.floor(i / state.gridSize);
+                const col = i % state.gridSize;
+                cell.style.animationDelay = `${(row + col) * 40}ms`;
+                
                 cell.dataset.index = i;
                 cell.addEventListener('pointerdown', (e) => { e.preventDefault(); handleCellTap(i, cell); });
                 DOM.board.appendChild(cell);
@@ -594,7 +631,11 @@
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
+                // Preserve the cell-entrance animation class if it's there
+                let isEntrance = cell.classList.contains('cell-entrance');
                 cell.className = 'cell';
+                if(isEntrance) cell.classList.add('cell-entrance');
+                
                 if(state.current[i]) cell.classList.add('active');
                 if(state.locked[i]) cell.classList.add('locked');
             });
@@ -620,6 +661,12 @@
         document.getElementById('btn-peek').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.peek)) return;
             const tempCurrent = [...state.current];
+            
+            // Reflow board pop animation for the flash pattern
+            DOM.board.classList.remove('board-animate');
+            void DOM.board.offsetWidth;
+            DOM.board.classList.add('board-animate');
+            
             flashPattern();
             setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
         });
