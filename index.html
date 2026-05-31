@@ -101,22 +101,33 @@
 
         #board-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 10px; perspective: 1000px; }
         
-        /* Premium Entrance Animations */
+        /* Premium Entrance & Resume Animations */
         @keyframes boardPop {
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .board-animate {
-            animation: boardPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        .board-animate { animation: boardPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        @keyframes springBoard {
+            0% { transform: scale(0.85); opacity: 0.5; }
+            40% { transform: scale(1.02); opacity: 1; }
+            70% { transform: scale(0.98); }
+            100% { transform: scale(1); opacity: 1; }
         }
+        .spring-board { animation: springBoard 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
         @keyframes cellPop {
             0% { transform: scale(0.2); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .cell-entrance {
-            animation: cellPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        .cell-entrance { animation: cellPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+        @keyframes springCell {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
+        .spring-cell { animation: springCell 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
         #game-board {
             display: grid; gap: 1.5%; padding: 3%; border-radius: 24px;
@@ -128,20 +139,31 @@
         .cell {
             width: 100%; height: 100%; background: rgba(255,255,255,0.04); border-radius: 15%; 
             border: 1px solid rgba(255,255,255,0.03); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
-            /* Premium Spring Physics Transition for interactions */
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s, opacity 0.3s;
         }
         .cell:active { transform: scale(0.85); }
         .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); transform: scale(0.95); border-color: transparent; }
         .cell.locked { background: var(--system-green); box-shadow: 0 0 14px var(--system-green); pointer-events: none; opacity: 0.85; }
         
+        /* Smooth Error States (Fixes popping issue) */
+        .cell::after {
+            content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold;
+            opacity: 0; transform: scale(0.5); transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none;
+        }
+        .cell.error {
+            border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); animation: errorWiggle 0.4s ease-in-out;
+        }
+        .cell.error::after { opacity: 1; transform: scale(1); }
+        
+        @keyframes errorWiggle { 
+            0%, 100% { transform: translateX(0); } 
+            25% { transform: translateX(-4px); } 
+            75% { transform: translateX(4px); } 
+        }
+
         /* Cascade Win Animation */
         .cell.win-bloom { animation: bloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         @keyframes bloom { 0% { transform: scale(0.95); box-shadow: 0 0 18px var(--theme-color); } 50% { transform: scale(1.1); background: #fff; box-shadow: 0 0 30px #fff; z-index: 10;} 100% { transform: scale(0); opacity: 0; } }
-
-        .cell.error { border-color: var(--system-red); animation: shake 0.4s; }
-        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
         .control-group { margin-bottom: 14px; }
         .control-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 2px; font-weight: 600;}
@@ -277,6 +299,7 @@
             timeTotal: 60,
             timeLeft: 60,
             timerId: null,
+            flashTimeoutId: null,
             costs: { peek: 0, hint: 0, skip: 0 },
             audioMuted: localStorage.getItem('kuro_muted') === 'true', 
             themeIndex: 0
@@ -433,27 +456,37 @@
             }
         });
 
-        // --- Performance & Visibility Management (with Resume Animation) ---
+        // --- Performance & Visibility Management (Pause/Resume + Spring) ---
         document.addEventListener("visibilitychange", () => {
             if (document.hidden) {
-                if (audioCtx && audioCtx.state === 'running') {
-                    audioCtx.suspend();
-                }
+                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                
+                // Pause everything
+                clearInterval(state.timerId);
+                clearTimeout(state.flashTimeoutId);
+                
             } else {
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                
+                // Only trigger resume animations if actively in a level (game booted & no modal showing)
+                if (DOM.app.classList.contains('booted') && !DOM.modal.classList.contains('show') && state.target.length > 0) {
+                    
+                    DOM.board.classList.remove('board-animate', 'spring-board');
+                    void DOM.board.offsetWidth; 
+                    DOM.board.classList.add('spring-board');
+                    
+                    document.querySelectorAll('.cell').forEach((cell, i) => {
+                        cell.classList.remove('cell-entrance', 'spring-cell');
+                        void cell.offsetWidth;
+                        const row = Math.floor(i / state.gridSize);
+                        const col = i % state.gridSize;
+                        cell.style.animationDelay = `${(row + col) * 30}ms`;
+                        cell.classList.add('spring-cell');
+                    });
+
+                    // Flash the pattern again to help them remember after returning
+                    setTimeout(() => { flashPattern(); }, 600);
                 }
-                
-                // Re-trigger premium entrance animations on resume
-                DOM.board.classList.remove('board-animate');
-                void DOM.board.offsetWidth; // Force Reflow
-                DOM.board.classList.add('board-animate');
-                
-                document.querySelectorAll('.cell').forEach((cell) => {
-                    cell.classList.remove('cell-entrance');
-                    void cell.offsetWidth;
-                    cell.classList.add('cell-entrance');
-                });
             }
         });
 
@@ -532,7 +565,7 @@
             if (audioCtx && !state.audioMuted && !bgmOsc) startBmitter();
             
             // Trigger board pop animation
-            DOM.board.classList.remove('board-animate');
+            DOM.board.classList.remove('board-animate', 'spring-board');
             void DOM.board.offsetWidth; 
             DOM.board.classList.add('board-animate');
             
@@ -564,7 +597,6 @@
                 const cell = document.createElement('div');
                 cell.className = 'cell cell-entrance';
                 
-                // Diagonal wave stagger delay for premium entry
                 const row = Math.floor(i / state.gridSize);
                 const col = i % state.gridSize;
                 cell.style.animationDelay = `${(row + col) * 40}ms`;
@@ -579,14 +611,15 @@
         function flashPattern() {
             state.isMemorizing = true;
             clearInterval(state.timerId);
+            clearTimeout(state.flashTimeoutId); // Clear if previously running
+
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
                 if(state.target[i]) cell.classList.add('active');
                 else cell.classList.remove('active');
             });
 
-            // Increased display duration so user can see it properly
-            setTimeout(() => {
+            state.flashTimeoutId = setTimeout(() => {
                 state.isMemorizing = false;
                 updateBoardVisuals();
                 startTimer();
@@ -617,6 +650,8 @@
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
             initAudio(); playSound('tap'); 
+            
+            // Remove error visually, handled elegantly by transitions now
             document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
             
             const row = Math.floor(index / state.gridSize);
@@ -640,10 +675,15 @@
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
-                // Preserve the cell-entrance animation class if it's there
+                // Preserve active animations & error states
                 let isEntrance = cell.classList.contains('cell-entrance');
+                let isSpring = cell.classList.contains('spring-cell');
+                let isError = cell.classList.contains('error');
+                
                 cell.className = 'cell';
                 if(isEntrance) cell.classList.add('cell-entrance');
+                if(isSpring) cell.classList.add('spring-cell');
+                if(isError) cell.classList.add('error');
                 
                 if(state.current[i]) cell.classList.add('active');
                 if(state.locked[i]) cell.classList.add('locked');
@@ -671,15 +711,13 @@
             if(state.isMemorizing || !deductIQ(state.costs.peek)) return;
             const tempCurrent = [...state.current];
             
-            // Reflow board pop animation for the flash pattern
-            DOM.board.classList.remove('board-animate');
+            DOM.board.classList.remove('board-animate', 'spring-board');
             void DOM.board.offsetWidth;
-            DOM.board.classList.add('board-animate');
+            DOM.board.classList.add('spring-board');
             
-            // Wait for entrance before flashing
             setTimeout(() => {
                 flashPattern();
-                // Override the flashPattern reset for peek specifically
+                // Override the standard flash end for peek
                 setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
             }, 800);
         });
@@ -719,7 +757,6 @@
                 localStorage.setItem('kuro_score', state.score);
                 updateScoreUI();
 
-                // Trigger Cascade Bloom Animation
                 const cells = document.querySelectorAll('.cell');
                 cells.forEach((cell, i) => {
                     setTimeout(() => { cell.classList.add('win-bloom'); }, i * 20);
@@ -731,9 +768,9 @@
                         `Base IQ: +${baseScore}<br>Time Bonus: +${timeBonus}<br><b>Total Logic IQ: ${state.score}</b>`, 
                         "Initialize Next Phase ➔", 
                         () => { state.level++; localStorage.setItem('kuro_level', state.level); startLevel(); },
-                        true // Show Share Button
+                        true
                     );
-                }, (cells.length * 20) + 600); // Wait for bloom to finish
+                }, (cells.length * 20) + 600); 
             }
         }
 
