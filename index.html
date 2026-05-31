@@ -677,18 +677,32 @@
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
-                // Preserve active animations & error states so they don't pop
-                let isEntrance = cell.classList.contains('cell-entrance');
-                let isSpring = cell.classList.contains('spring-cell');
-                let isError = cell.classList.contains('error');
+                // // Preserve active animations & error states so they don't pop
+                // let isEntrance = cell.classList.contains('cell-entrance');
+                // let isSpring = cell.classList.contains('spring-cell');
+                // let isError = cell.classList.contains('error');
                 
-                cell.className = 'cell';
-                if(isEntrance) cell.classList.add('cell-entrance');
-                if(isSpring) cell.classList.add('spring-cell');
-                if(isError) cell.classList.add('error');
+                // cell.className = 'cell';
+                // if(isEntrance) cell.classList.add('cell-entrance');
+                // if(isSpring) cell.classList.add('spring-cell');
+                // if(isError) cell.classList.add('error');
                 
-                if(state.current[i]) cell.classList.add('active');
-                if(state.locked[i]) cell.classList.add('locked');
+                // if(state.current[i]) cell.classList.add('active');
+                // if(state.locked[i]) cell.classList.add('locked');
+                // Smoothly toggle the active and locked states without stripping 
+                // and re-adding the animation classes. This stops the "popup" glitch!
+                
+                if (state.current[i]) {
+                    cell.classList.add('active');
+                } else {
+                    cell.classList.remove('active');
+                }
+                
+                if (state.locked[i]) {
+                    cell.classList.add('locked');
+                } else {
+                    cell.classList.remove('locked');
+                }
             });
         }
         
