@@ -154,7 +154,7 @@
         .cell.error {
             border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); animation: errorWiggle 0.4s ease-in-out; /* The wiggle returns */
         }
-        .cell.error::after { opacity: 1;  }
+        .cell.error::after { opacity: 1; transform: scale(1); }
         /* The Wiggle Keyframes */
         @keyframes errorWiggle { 
             0%, 100% { transform: translateX(0); } 
