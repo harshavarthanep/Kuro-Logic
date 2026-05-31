@@ -152,9 +152,15 @@
             opacity: 0; transform: scale(0.8); transition: opacity 0.4s ease, transform 0.4s ease; pointer-events: none;
         }
         .cell.error {
-            border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); 
+            border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); animation: errorWiggle 0.4s ease-in-out; /* The wiggle returns */
         }
         .cell.error::after { opacity: 1; transform: scale(1); }
+        /* The Wiggle Keyframes */
+        @keyframes errorWiggle { 
+            0%, 100% { transform: translateX(0); } 
+            25% { transform: translateX(-4px); } 
+            75% { transform: translateX(4px); } 
+        }
 
         /* Cascade Win Animation */
         .cell.win-bloom { animation: bloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
