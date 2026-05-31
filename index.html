@@ -674,12 +674,39 @@
             }, 1000);
         }
 
+        // function handleCellTap(index, cellEl) {
+        //     if(state.isMemorizing) return;
+        //     initAudio(); playSound('tap'); 
+            
+        //     // Remove error visually, handled elegantly by pure transitions now
+        //     document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+            
+        //     const row = Math.floor(index / state.gridSize);
+        //     const col = index % state.gridSize;
+            
+        //     const toggle = (r, c) => {
+        //         if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
+        //             let idx = r * state.gridSize + c;
+        //             if(!state.locked[idx]) state.current[idx] = !state.current[idx];
+        //         }
+        //     }
+        //     if (state.activeTool === 'dot') { toggle(row, col); }
+        //     if (state.activeTool === 'plus') { toggle(row, col); toggle(row-1, col); toggle(row+1, col); toggle(row, col-1); toggle(row, col+1); }
+        //     if (state.activeTool === 'cross') { toggle(row, col); toggle(row-1, col-1); toggle(row-1, col+1); toggle(row+1, col-1); toggle(row+1, col+1); }
+            
+        //     updateBoardVisuals();
+        //     checkWin();
+        // }
+
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
             initAudio(); playSound('tap'); 
             
-            // Remove error visually, handled elegantly by pure transitions now
-            document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+            // FIX: Remove all old entrance/spring animations so they don't clash and restart.
+            // Also clears the error class elegantly without triggering a pop.
+            document.querySelectorAll('.cell').forEach(c => {
+                c.classList.remove('cell-entrance', 'spring-cell', 'error');
+            });
             
             const row = Math.floor(index / state.gridSize);
             const col = index % state.gridSize;
