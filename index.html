@@ -38,15 +38,39 @@
             transition: background 1s ease;
         }
 
-        /* Fluid Background Blobs with Parallax */
-        .parallax-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; transform: translate(var(--tilt-x), var(--tilt-y)); transition: transform 0.1s ease-out; }
-        .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); animation: float var(--blob-speed) infinite alternate ease-in-out; transition: opacity 0.5s ease, filter 0.5s ease; }
+        /* Fluid Background Blobs with Parallax - OPTIMIZED */
+        .parallax-layer { 
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; 
+            transform: translate(var(--tilt-x), var(--tilt-y)); 
+            transition: transform 0.1s ease-out;
+            will-change: transform; 
+        }
+        .bg-blob { 
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--blob-opacity); 
+            animation: float var(--blob-speed) infinite alternate ease-in-out; 
+            transition: opacity 0.5s ease, filter 0.5s ease;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0); /* Force Hardware Acceleration */
+        }
         .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--theme-color); }
         .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #4a00e0; animation-delay: -5s; }
 
-        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(8vw, 6vh) scale(1.1); } }
+        @keyframes float { 0% { transform: translate3d(0, 0, 0) scale(1); } 100% { transform: translate3d(8vw, 6vh, 0) scale(1.1); } }
 
-        #app { width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; }
+        /* App Layout with Boot Animation */
+        #app { 
+            width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; 
+            display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; 
+            opacity: 0; /* Hidden initially for Boot Screen */
+            transform: scale(0.95);
+            transition: opacity 1s cubic-bezier(0.34, 1.56, 0.64, 1), transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        #app.booted {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: all;
+        }
         
         @media (min-width: 768px) {
             #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 340px; align-content: center; gap: 20px; padding: 25px;}
@@ -246,6 +270,7 @@
         ];
 
         const DOM = {
+            app: document.getElementById('app'),
             board: document.getElementById('game-board'),
             tierDisplay: document.getElementById('tier-display'),
             scoreDisplay: document.getElementById('score-display'),
@@ -264,10 +289,10 @@
         function triggerHaptic(type) {
             if (!('vibrate' in navigator)) return;
             try {
-                if (type === 'light') navigator.vibrate(10); // UI taps, tool changes
-                else if (type === 'medium') navigator.vibrate(15); // Cell taps
-                else if (type === 'heavy') navigator.vibrate([40, 40, 40]); // Errors
-                else if (type === 'success') navigator.vibrate([20, 30, 20, 30, 50]); // Level Clear
+                if (type === 'light') navigator.vibrate(10); 
+                else if (type === 'medium') navigator.vibrate(15); 
+                else if (type === 'heavy') navigator.vibrate([40, 40, 40]); 
+                else if (type === 'success') navigator.vibrate([20, 30, 20, 30, 50]); 
             } catch(e) {}
         }
 
@@ -319,7 +344,6 @@
         }
 
         function playSound(type) {
-            // Trigger specific haptics based on audio event
             if (type === 'tap') triggerHaptic('medium');
             else if (type === 'error') triggerHaptic('heavy');
             else if (type === 'win') triggerHaptic('success');
@@ -356,11 +380,9 @@
             }
         }
         
-        // Haptics & Audio on UI elements
         document.querySelectorAll('.btn, .util-btn, .btn-primary, .btn-secondary').forEach(el => {
             el.addEventListener('pointerdown', () => { initAudio(); triggerHaptic('light'); playSound('tap'); });
         });
-        document.body.addEventListener('pointerdown', initAudio, { once: true });
         
         function updateAudioTrack() { if (bgmOsc && audioCtx && !state.audioMuted) bgmStep = 0; }
 
@@ -375,52 +397,58 @@
             else { startBmitter(); }
         });
 
-        // --- Parallax ---
+        // --- Optimized Parallax ---
+        let parallaxTicking = false;
         window.addEventListener('deviceorientation', (e) => {
             if (!e.gamma || !e.beta) return;
-            const x = Math.min(Math.max(e.gamma, -40), 40) / 40; 
-            const y = Math.min(Math.max(e.beta, -40), 40) / 40;
-            document.documentElement.style.setProperty('--tilt-x', `${x * 15}px`);
-            document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
+            if (!parallaxTicking) {
+                window.requestAnimationFrame(() => {
+                    const x = Math.min(Math.max(e.gamma, -40), 40) / 40; 
+                    const y = Math.min(Math.max(e.beta, -40), 40) / 40;
+                    document.documentElement.style.setProperty('--tilt-x', `${x * 15}px`);
+                    document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
+                    parallaxTicking = false;
+                });
+                parallaxTicking = true;
+            }
+        });
+
+        // --- Performance & Visibility Management ---
+        // Suspends Audio Engine when app is closed/minimized to stop mobile lag
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                if (audioCtx && audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                }
+            } else {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
         });
 
         // --- Native PWA Install Handler ---
         let deferredPrompt;
         
-        // 1. Intercept the browser's native install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the default mini-infobar from appearing automatically
             e.preventDefault();
-            // Stash the event so it can be triggered later by your custom button
             deferredPrompt = e;
-            // Reveal your custom install button in the UI
             DOM.installBtn.style.display = 'flex'; 
         });
         
-        // 2. Handle the user clicking your custom install button
         DOM.installBtn.addEventListener('click', async () => {
-            // If the prompt isn't available, do nothing
             if (!deferredPrompt) return; 
-            
-            // Trigger the native browser install prompt
             deferredPrompt.prompt();
-            
-            // Wait for the user's choice (Install or Cancel)
             const { outcome } = await deferredPrompt.userChoice;
-            
-            // If they successfully installed the app, clean up the UI
             if (outcome === 'accepted') {
                 deferredPrompt = null;
                 DOM.installBtn.style.display = 'none';
             }
         });
         
-        // 3. Listen for the actual installation event to finalize cleanup
         window.addEventListener('appinstalled', () => {
-            // The app was installed successfully (either via your button or the browser menu)
             deferredPrompt = null;
             DOM.installBtn.style.display = 'none';
-            console.log('App successfully installed!');
         });
 
         // --- Core Application Initialization ---
@@ -428,7 +456,19 @@
             updateScoreUI();
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
-            startLevel();
+            
+            // Re-using the modal system to act as a Boot/Start Screen
+            showModal(
+                "KURO LOGIC", 
+                "System standby. Are you ready to initialize the logic grid?", 
+                "Boot System ➔", 
+                () => {
+                    DOM.app.classList.add('booted'); // Triggers CSS transition to show layout
+                    initAudio(); // Required to bypass browser autoplay rules gracefully
+                    setTimeout(() => { startLevel(); }, 400); // Give layout time to fade in
+                },
+                false
+            );
         }
 
         function calculateEconomy() {
@@ -530,7 +570,7 @@
 
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
-            initAudio(); playSound('tap'); // tap handles haptics inside playSound
+            initAudio(); playSound('tap'); 
             document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
             
             const row = Math.floor(index / state.gridSize);
@@ -641,7 +681,7 @@
 
         DOM.tools.forEach(tool => {
             tool.addEventListener('pointerdown', () => {
-                triggerHaptic('light'); // Specific haptic for tool switch
+                triggerHaptic('light'); 
                 DOM.tools.forEach(t => t.classList.remove('selected'));
                 tool.classList.add('selected'); state.activeTool = tool.dataset.type;
             });
@@ -652,24 +692,22 @@
             DOM.modalTitle.innerHTML = title;
             DOM.modalDesc.innerHTML = desc;
             DOM.modalBtn.innerText = btnText;
-            DOM.modalShareBtn.style.display = showShare ? 'flex' : 'none'; // Always show in modal if it's a win
+            DOM.modalShareBtn.style.display = showShare ? 'flex' : 'none'; 
             DOM.modal.classList.add('show');
             DOM.modalBtn.onclick = () => { DOM.modal.classList.remove('show'); action(); };
         }
 
-        // Viral Share Card Generator with Game Link included
+        // Viral Share Card Generator
         DOM.modalShareBtn.addEventListener('click', async () => {
             triggerHaptic('medium');
             const canvas = document.getElementById('share-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Draw sleek dark background
             const grad = ctx.createRadialGradient(540, 540, 100, 540, 540, 800);
             grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 1080, 1080);
             
-            // Draw Text
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.font = 'bold 120px -apple-system, sans-serif';
@@ -687,12 +725,10 @@
             ctx.font = '40px -apple-system, sans-serif';
             ctx.fillText('CERTIFIED LOGIC IQ', 540, 780);
 
-            // Draw the Game URL so others can play
             ctx.fillStyle = themes[state.themeIndex].color;
             ctx.font = 'bold 36px -apple-system, sans-serif';
             ctx.fillText('Play at: harshavarthanep.github.io/Kuro-Logic', 540, 1000);
             
-            // Convert to file and share
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'kuro-logic-iq.png', { type: 'image/png' });
                 
@@ -705,7 +741,6 @@
                         });
                     } catch (err) { console.log("Share cancelled", err); }
                 } else {
-                    // Fallback for desktop/unsupported browsers: Download the image
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
