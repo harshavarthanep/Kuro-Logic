@@ -38,16 +38,42 @@
             transition: background 1s ease;
         }
 
-        /* 🚀 OPTIMIZATION: Hardware Acceleration & Removed Expensive Blurs */
-        .parallax-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; transform: translate3d(var(--tilt-x), var(--tilt-y), 0); transition: transform 0.1s ease-out; will-change: transform; }
-        .bg-blob { position: absolute; border-radius: 50%; opacity: var(--blob-opacity); animation: float var(--blob-speed) infinite alternate ease-in-out; transition: opacity 0.5s ease; will-change: transform, opacity; transform: translateZ(0); }
-        /* Used radial gradients instead of filter:blur for massive performance boost */
-        .blob-1 { top: -20%; left: -20%; width: 80vw; height: 80vw; background: radial-gradient(circle, var(--theme-color) 0%, transparent 65%); }
-        .blob-2 { bottom: -30%; right: -20%; width: 90vw; height: 90vw; background: radial-gradient(circle, #4a00e0 0%, transparent 65%); animation-delay: -5s; }
+        /* Fluid Background Blobs with Parallax */
+        .parallax-layer { 
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -1; 
+            transform: translate(var(--tilt-x), var(--tilt-y)); 
+            transition: transform 0.1s ease-out;
+            will-change: transform; 
+        }
+        .bg-blob { 
+            position: absolute; border-radius: 50%; filter: blur(60px); opacity: var(--blob-opacity); 
+            animation: float var(--blob-speed) infinite alternate ease-in-out; 
+            transition: opacity 0.5s ease, filter 0.5s ease;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0); 
+        }
+        .blob-1 { top: 5%; left: 0%; width: 75vmin; height: 75vmin; background: var(--theme-color); }
+        .blob-2 { bottom: 5%; right: 0%; width: 85vmin; height: 85vmin; background: #4a00e0; animation-delay: -5s; }
 
-        @keyframes float { 0% { transform: translate3d(0, 0, 0) scale(1); } 100% { transform: translate3d(8vw, 6vh, 0) scale(1.1); } }
+        @keyframes float { 
+            0% { transform: translate3d(0, 0, 0) scale(1); } 
+            100% { transform: translate3d(15vmin, 15vmin, 0) scale(1.15); } 
+        }
 
-        #app { width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; }
+        /* App Layout with Boot Animation */
+        #app { 
+            width: 100%; max-width: 1000px; height: 100dvh; max-height: 100dvh; padding: 15px; 
+            display: grid; gap: 12px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: 1fr; 
+            opacity: 0; 
+            transform: scale(0.95);
+            transition: opacity 1s cubic-bezier(0.34, 1.56, 0.64, 1), transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        #app.booted {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: all;
+        }
         
         @media (min-width: 768px) {
             #app { grid-template-rows: auto 1fr; grid-template-columns: 1fr 340px; align-content: center; gap: 20px; padding: 25px;}
@@ -56,7 +82,7 @@
             #board-container { height: 100%; }
         }
 
-        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 22px; box-shadow: var(--glass-shadow); padding: 16px; transform: translateZ(0); }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 22px; box-shadow: var(--glass-shadow); padding: 16px; }
 
         header { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 14px 20px; overflow: hidden;}
         .branding h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
@@ -70,47 +96,112 @@
         .util-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .util-btn:active { transform: scale(0.85); }
 
-        .timer-container { position: relative; flex-grow: 1; max-width: 200px; margin: 0 15px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; transform: translateZ(0); }
-        #timer-bar { height: 100%; background: var(--theme-color); width: 100%; transition: width 1s linear, background 0.3s; border-radius: 10px; will-change: width, background-color; }
+        .timer-container { position: relative; flex-grow: 1; max-width: 200px; margin: 0 15px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
+        #timer-bar { height: 100%; background: var(--theme-color); width: 100%; transition: width 1s linear, background 0.3s; border-radius: 10px; }
 
         #board-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 10px; perspective: 1000px; }
         
+        /* Premium Entrance & Resume Animations */
+        @keyframes boardPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .board-animate { animation: boardPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        @keyframes springBoard {
+            0% { transform: scale(0.85); opacity: 0.5; }
+            40% { transform: scale(1.02); opacity: 1; }
+            70% { transform: scale(0.98); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .spring-board { animation: springBoard 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        @keyframes cellPop {
+            0% { transform: scale(0.2); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .cell-entrance { animation: cellPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+        @keyframes springCell {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .spring-cell { animation: springCell 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
         #game-board {
             display: grid; gap: 1.5%; padding: 3%; border-radius: 24px;
             background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
             width: 100%; max-width: min(100vw - 60px, 55vh); aspect-ratio: 1 / 1; 
-            transition: all 0.4s ease; transform-style: preserve-3d;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease; transform-style: preserve-3d;
         }
         
-        /* 🚀 OPTIMIZATION: added will-change to cells */
-        .cell {
+        /* .cell {
             width: 100%; height: 100%; background: rgba(255,255,255,0.04); border-radius: 15%; 
             border: 1px solid rgba(255,255,255,0.03); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, box-shadow 0.2s, opacity 0.3s;
-            will-change: transform, background-color, box-shadow;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, border-color 0.3s ease, box-shadow 0.2s, opacity 0.3s;
         }
         .cell:active { transform: scale(0.85); }
         .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); transform: scale(0.95); border-color: transparent; }
         .cell.locked { background: var(--system-green); box-shadow: 0 0 14px var(--system-green); pointer-events: none; opacity: 0.85; }
         
+        .cell::after {
+            content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold;
+            opacity: 0; transform: scale(0.8); transition: opacity 0.4s ease, pointer-events: none;
+        }
+        .cell.error {
+            border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); animation: errorWiggle 0.4s ease-in-out;
+        }
+        .cell.error::after { opacity: 1; transform: scale(1); } */
+
+        .cell {
+            width: 100%; height: 100%; background: rgba(255,255,255,0.04); border-radius: 15%; 
+            border: 1px solid rgba(255,255,255,0.03); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
+            /* 1. Removed transform transition to stop the cell from bouncing when tapped */
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.2s, opacity 0.3s;
+        }
+        
+        /* 2. COMPLETELY REMOVED the ".cell:active { transform: scale(0.85); }" line */
+
+        .cell.active { background: var(--theme-color); box-shadow: 0 0 18px var(--theme-color); border-color: transparent; }
+        .cell.locked { background: var(--system-green); box-shadow: 0 0 14px var(--system-green); pointer-events: none; opacity: 0.85; }
+        
+        /* 3. Fixed the broken transition syntax so the ✕ fades out smoothly instead of popping */
+        .cell::after {
+            content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold;
+            opacity: 0; pointer-events: none; 
+            /* Fixed transition syntax so the X fades perfectly */
+            transition: opacity 0.4s ease;
+        }
+        
+        .cell.error {
+            border-color: var(--system-red); background: rgba(255, 69, 58, 0.15); animation: errorWiggle 0.4s ease-in-out; 
+        }
+        
+        .cell.error::after { opacity: 1;}
+        
+        /* The Wiggle Keyframes */
+        @keyframes errorWiggle { 
+            0%, 100% { transform: translateX(0); } 
+            25% { transform: translateX(-4px); } 
+            75% { transform: translateX(4px); } 
+        }
+
+        /* Cascade Win Animation */
         .cell.win-bloom { animation: bloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         @keyframes bloom { 0% { transform: scale(0.95); box-shadow: 0 0 18px var(--theme-color); } 50% { transform: scale(1.1); background: #fff; box-shadow: 0 0 30px #fff; z-index: 10;} 100% { transform: scale(0); opacity: 0; } }
-
-        .cell.error { border-color: var(--system-red); animation: shake 0.4s; }
-        .cell.error::after { content: '✕'; position: absolute; color: var(--system-red); font-size: min(5vw, 24px); font-weight: bold; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
         .control-group { margin-bottom: 14px; }
         .control-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 2px; font-weight: 600;}
         
         .tool-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .tool { height: 54px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s; will-change: transform, background-color; }
+        .tool { height: 54px; border-radius: 14px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); border: 1px solid transparent; cursor: pointer; transition: 0.2s; }
         .tool span { font-size: 20px; font-weight: 300; margin-bottom: 1px; }
         .tool label { font-size: 9px; font-weight: 600; }
         .tool.selected { background: rgba(255,255,255,0.12); color: var(--theme-color); border-color: var(--theme-color); transform: scale(1.05);}
 
         .action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .btn { padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,0.04); color: var(--text-main); border: 1px solid var(--glass-border); font-size: 12px; font-weight: 600; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); will-change: transform; }
+        .btn { padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,0.04); color: var(--text-main); border: 1px solid var(--glass-border); font-size: 12px; font-weight: 600; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .btn:active { transform: scale(0.92); }
         .btn-cost { font-size: 9px; color: var(--theme-color); font-weight: 800; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 6px; }
         .btn-check { background: rgba(255,255,255,0.08); }
@@ -130,6 +221,7 @@
 
         .watermark { position: absolute; bottom: 8px; width: 100%; text-align: center; font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 50; letter-spacing: 0.5px; }
         
+        /* Hidden canvas for generating share image */
         #share-canvas { display: none; }
     </style>
 </head>
@@ -179,7 +271,7 @@
             </div>
 
             <div class="control-group" style="margin-bottom: 0;">
-                <div class="control-title">Super Powers</div>
+                <div class="control-title">Super Powers (Store)</div>
                 <div class="action-row">
                     <button class="btn btn-check" id="btn-check">
                         <div>✓ Verify Moves</div>
@@ -233,6 +325,7 @@
             timeTotal: 60,
             timeLeft: 60,
             timerId: null,
+            flashTimeoutId: null,
             costs: { peek: 0, hint: 0, skip: 0 },
             audioMuted: localStorage.getItem('kuro_muted') === 'true', 
             themeIndex: 0
@@ -246,6 +339,7 @@
         ];
 
         const DOM = {
+            app: document.getElementById('app'),
             board: document.getElementById('game-board'),
             tierDisplay: document.getElementById('tier-display'),
             scoreDisplay: document.getElementById('score-display'),
@@ -271,24 +365,19 @@
             } catch(e) {}
         }
 
-        // --- 🚀 OPTIMIZED Web Audio Engine ---
+        // --- Premium Web Audio Engine ---
         let audioCtx = null;
         let bgmOsc = null, bgmGain = null, bgmFilter = null, bgmTimeout = null, bgmStep = 0;
 
         function initAudio() {
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (state.audioMuted) {
-                audioCtx.suspend(); // Saves battery immediately if starting muted
-            } else {
-                startBmitter();
-            }
+            startBmitter();
         }
 
         function startBmitter() {
             if (!audioCtx || state.audioMuted) return;
             try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
                 bgmOsc = audioCtx.createOscillator();
                 bgmGain = audioCtx.createGain();
                 bgmFilter = audioCtx.createBiquadFilter();
@@ -303,9 +392,7 @@
         }
 
         function tickBGM() {
-            // Failsafe: if muted while looping, abort gracefully
-            if (!audioCtx || state.audioMuted || !bgmOsc) return; 
-            
+            if (!audioCtx || state.audioMuted || !bgmOsc) return;
             let now = audioCtx.currentTime;
             let pct = state.timeLeft / state.timeTotal;
             let currentChord = themes[state.themeIndex].freqs;
@@ -330,8 +417,7 @@
             else if (type === 'error') triggerHaptic('heavy');
             else if (type === 'win') triggerHaptic('success');
 
-            if (!audioCtx || state.audioMuted || audioCtx.state === 'suspended') return;
-            
+            if (!audioCtx || state.audioMuted) return;
             let now = audioCtx.currentTime;
             const createSynth = (waveType, startFreq) => {
                 let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
@@ -366,7 +452,6 @@
         document.querySelectorAll('.btn, .util-btn, .btn-primary, .btn-secondary').forEach(el => {
             el.addEventListener('pointerdown', () => { initAudio(); triggerHaptic('light'); playSound('tap'); });
         });
-        document.body.addEventListener('pointerdown', initAudio, { once: true });
         
         function updateAudioTrack() { if (bgmOsc && audioCtx && !state.audioMuted) bgmStep = 0; }
 
@@ -375,59 +460,82 @@
             triggerHaptic('light');
             state.audioMuted = !state.audioMuted;
             localStorage.setItem('kuro_muted', state.audioMuted);
-            
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
-            
-            if (state.audioMuted) { 
-                // 🚀 OPTIMIZATION: Put Audio context to sleep to save battery
-                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
-                clearTimeout(bgmTimeout); 
-                if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; } 
-            } else { 
-                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                startBmitter(); 
-            }
+            if (state.audioMuted) { clearTimeout(bgmTimeout); if (bgmOsc) { try { bgmOsc.stop(); } catch(e){} bgmOsc = null; } } 
+            else { startBmitter(); }
         });
 
-        // --- 🚀 OPTIMIZED Parallax (Throttled) ---
-        let isTicking = false;
+        // --- Optimized Parallax ---
+        let parallaxTicking = false;
         window.addEventListener('deviceorientation', (e) => {
             if (!e.gamma || !e.beta) return;
-            if (!isTicking) {
+            if (!parallaxTicking) {
                 window.requestAnimationFrame(() => {
                     const x = Math.min(Math.max(e.gamma, -40), 40) / 40; 
                     const y = Math.min(Math.max(e.beta, -40), 40) / 40;
                     document.documentElement.style.setProperty('--tilt-x', `${x * 15}px`);
                     document.documentElement.style.setProperty('--tilt-y', `${y * 15}px`);
-                    isTicking = false;
+                    parallaxTicking = false;
                 });
-                isTicking = true;
+                parallaxTicking = true;
             }
         });
 
-        // --- Universal PWA Install Handler ---
+        // --- Performance & Visibility Management (Pause/Resume + Spring) ---
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                
+                // Pause everything
+                clearInterval(state.timerId);
+                clearTimeout(state.flashTimeoutId);
+                
+            } else {
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                
+                // Only trigger resume animations if actively in a level (game booted & no modal showing)
+                if (DOM.app.classList.contains('booted') && !DOM.modal.classList.contains('show') && state.target.length > 0) {
+                    
+                    DOM.board.classList.remove('board-animate', 'spring-board');
+                    void DOM.board.offsetWidth; 
+                    DOM.board.classList.add('spring-board');
+                    
+                    document.querySelectorAll('.cell').forEach((cell, i) => {
+                        cell.classList.remove('cell-entrance', 'spring-cell');
+                        void cell.offsetWidth;
+                        const row = Math.floor(i / state.gridSize);
+                        const col = i % state.gridSize;
+                        // Increased stagger delay to 60ms for a more visible, deliberate wave
+                        cell.style.animationDelay = `${(row + col) * 60}ms`;
+                        cell.classList.add('spring-cell');
+                    });
+
+                    // Increased wait time before flashing the pattern so the grid finishes its entrance
+                    setTimeout(() => { flashPattern(); }, 1200);
+                }
+            }
+        });
+
+        // --- Native PWA Install Handler ---
         let deferredPrompt;
+        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            DOM.installBtn.style.display = 'flex';
+            DOM.installBtn.style.display = 'flex'; 
         });
-
+        
         DOM.installBtn.addEventListener('click', async () => {
-            triggerHaptic('medium');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    deferredPrompt = null;
-                    DOM.installBtn.style.display = 'none';
-                }
-            } else {
-                showModal("Install Kuro Logic", "To install on iOS, tap the Share icon at the bottom of your browser and select 'Add to Home Screen'.", "Got it", () => {}, false);
+            if (!deferredPrompt) return; 
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                deferredPrompt = null;
+                DOM.installBtn.style.display = 'none';
             }
         });
-
+        
         window.addEventListener('appinstalled', () => {
             deferredPrompt = null;
             DOM.installBtn.style.display = 'none';
@@ -438,7 +546,18 @@
             updateScoreUI();
             document.getElementById('icon-vol-on').style.display = state.audioMuted ? 'none' : 'block';
             document.getElementById('icon-vol-off').style.display = state.audioMuted ? 'block' : 'none';
-            startLevel();
+            
+            showModal(
+                "KURO LOGIC", 
+                "System standby. Are you ready to initialize the logic grid?", 
+                "Boot System ➔", 
+                () => {
+                    DOM.app.classList.add('booted'); 
+                    initAudio(); 
+                    setTimeout(() => { startLevel(); }, 400); 
+                },
+                false
+            );
         }
 
         function calculateEconomy() {
@@ -472,9 +591,18 @@
             updateAudioTrack();
             if (audioCtx && !state.audioMuted && !bgmOsc) startBmitter();
             
+            // Trigger board pop animation
+            DOM.board.classList.remove('board-animate', 'spring-board');
+            void DOM.board.offsetWidth; 
+            DOM.board.classList.add('board-animate');
+            
             generateTarget();
             renderBoard();
-            flashPattern();
+
+            // WAIT for grid to animate in before showing pattern
+            setTimeout(() => {
+                flashPattern();
+            }, 800);
         }
 
         function generateTarget() {
@@ -494,7 +622,12 @@
             DOM.board.innerHTML = '';
             for(let i = 0; i < state.gridSize * state.gridSize; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'cell';
+                cell.className = 'cell cell-entrance';
+                
+                const row = Math.floor(i / state.gridSize);
+                const col = i % state.gridSize;
+                cell.style.animationDelay = `${(row + col) * 40}ms`;
+                
                 cell.dataset.index = i;
                 cell.addEventListener('pointerdown', (e) => { e.preventDefault(); handleCellTap(i, cell); });
                 DOM.board.appendChild(cell);
@@ -505,16 +638,19 @@
         function flashPattern() {
             state.isMemorizing = true;
             clearInterval(state.timerId);
+            clearTimeout(state.flashTimeoutId); // Clear if previously running
+
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
                 if(state.target[i]) cell.classList.add('active');
                 else cell.classList.remove('active');
             });
-            setTimeout(() => {
+
+            state.flashTimeoutId = setTimeout(() => {
                 state.isMemorizing = false;
                 updateBoardVisuals();
                 startTimer();
-            }, Math.max(1000, 3000 - (state.level * 100)));
+            }, Math.max(2000, 4000 - (state.level * 100))); 
         }
 
         function startTimer() {
@@ -538,10 +674,39 @@
             }, 1000);
         }
 
+        // function handleCellTap(index, cellEl) {
+        //     if(state.isMemorizing) return;
+        //     initAudio(); playSound('tap'); 
+            
+        //     // Remove error visually, handled elegantly by pure transitions now
+        //     document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+            
+        //     const row = Math.floor(index / state.gridSize);
+        //     const col = index % state.gridSize;
+            
+        //     const toggle = (r, c) => {
+        //         if(r >= 0 && r < state.gridSize && c >= 0 && c < state.gridSize) {
+        //             let idx = r * state.gridSize + c;
+        //             if(!state.locked[idx]) state.current[idx] = !state.current[idx];
+        //         }
+        //     }
+        //     if (state.activeTool === 'dot') { toggle(row, col); }
+        //     if (state.activeTool === 'plus') { toggle(row, col); toggle(row-1, col); toggle(row+1, col); toggle(row, col-1); toggle(row, col+1); }
+        //     if (state.activeTool === 'cross') { toggle(row, col); toggle(row-1, col-1); toggle(row-1, col+1); toggle(row+1, col-1); toggle(row+1, col+1); }
+            
+        //     updateBoardVisuals();
+        //     checkWin();
+        // }
+
         function handleCellTap(index, cellEl) {
             if(state.isMemorizing) return;
             initAudio(); playSound('tap'); 
-            document.querySelectorAll('.cell.error').forEach(c => c.classList.remove('error'));
+            
+            // FIX: Remove all old entrance/spring animations so they don't clash and restart.
+            // Also clears the error class elegantly without triggering a pop.
+            document.querySelectorAll('.cell').forEach(c => {
+                c.classList.remove('cell-entrance', 'spring-cell', 'error');
+            });
             
             const row = Math.floor(index / state.gridSize);
             const col = index % state.gridSize;
@@ -564,12 +729,36 @@
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
-                cell.className = 'cell';
-                if(state.current[i]) cell.classList.add('active');
-                if(state.locked[i]) cell.classList.add('locked');
+                // // Preserve active animations & error states so they don't pop
+                // let isEntrance = cell.classList.contains('cell-entrance');
+                // let isSpring = cell.classList.contains('spring-cell');
+                // let isError = cell.classList.contains('error');
+                
+                // cell.className = 'cell';
+                // if(isEntrance) cell.classList.add('cell-entrance');
+                // if(isSpring) cell.classList.add('spring-cell');
+                // if(isError) cell.classList.add('error');
+                
+                // if(state.current[i]) cell.classList.add('active');
+                // if(state.locked[i]) cell.classList.add('locked');
+                // Smoothly toggle the active and locked states without stripping 
+                // and re-adding the animation classes. This stops the "popup" glitch!
+                
+                if (state.current[i]) {
+                    cell.classList.add('active');
+                } else {
+                    cell.classList.remove('active');
+                }
+                
+                if (state.locked[i]) {
+                    cell.classList.add('locked');
+                } else {
+                    cell.classList.remove('locked');
+                }
             });
         }
         
+        // --- Power Shop ---
         document.getElementById('btn-check').addEventListener('click', () => {
             if(state.isMemorizing) return;
             const cells = document.querySelectorAll('.cell');
@@ -589,8 +778,16 @@
         document.getElementById('btn-peek').addEventListener('click', () => {
             if(state.isMemorizing || !deductIQ(state.costs.peek)) return;
             const tempCurrent = [...state.current];
-            flashPattern();
-            setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
+            
+            DOM.board.classList.remove('board-animate', 'spring-board');
+            void DOM.board.offsetWidth;
+            DOM.board.classList.add('spring-board');
+            
+            setTimeout(() => {
+                flashPattern();
+                // Override the standard flash end for peek
+                setTimeout(() => { state.current = tempCurrent; updateBoardVisuals(); }, 2000);
+            }, 800);
         });
 
         document.getElementById('btn-hint').addEventListener('click', () => {
@@ -615,6 +812,7 @@
             else { playSound('error'); return false; }
         }
 
+        // --- Win Logic & Cascade Animation ---
         function checkWin() {
             if(state.current.every((val, index) => val === state.target[index])) {
                 state.isMemorizing = true;
@@ -638,7 +836,7 @@
                         `Base IQ: +${baseScore}<br>Time Bonus: +${timeBonus}<br><b>Total Logic IQ: ${state.score}</b>`, 
                         "Initialize Next Phase ➔", 
                         () => { state.level++; localStorage.setItem('kuro_level', state.level); startLevel(); },
-                        true 
+                        true
                     );
                 }, (cells.length * 20) + 600); 
             }
@@ -654,6 +852,7 @@
             });
         });
 
+        // --- Premium Modal & Share API ---
         function showModal(title, desc, btnText, action, showShare = false) {
             DOM.modalTitle.innerHTML = title;
             DOM.modalDesc.innerHTML = desc;
@@ -663,6 +862,7 @@
             DOM.modalBtn.onclick = () => { DOM.modal.classList.remove('show'); action(); };
         }
 
+        // Viral Share Card Generator
         DOM.modalShareBtn.addEventListener('click', async () => {
             triggerHaptic('medium');
             const canvas = document.getElementById('share-canvas');
